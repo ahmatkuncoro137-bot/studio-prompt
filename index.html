@@ -99,7 +99,7 @@ body::before {
 .nav a:active { background: var(--card-2); }
 
 /* sections */
-section { padding: 22px var(--pad) 8px; scroll-margin-top: 132px; }
+section { padding: 22px var(--pad) 8px; scroll-margin-top: 168px; }
 .sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
 .sec-head h2 {
   font-family: var(--serif); font-size: 22px; margin: 0; color: var(--gold-2);
@@ -282,6 +282,74 @@ footer.mini {
 }
 hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--line), transparent); margin: 8px 0 14px; }
 .empty { color: var(--muted); text-align: center; padding: 20px 8px; font-size: 14px; }
+
+/* modes */
+.mode-switch {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  padding: 8px var(--pad) 0;
+}
+.mode-switch button {
+  border-radius: 14px; padding: 11px 8px; font-size: 13.5px; line-height: 1.25;
+}
+.mode-switch button small { display: block; font-weight: 500; font-size: 10.5px; opacity: .8; }
+.mode-switch button.on { background: var(--gold); color: #1a1408; border-color: var(--gold); }
+body.mode-video .prompt-only { display: none; }
+body.mode-prompt .mode-video-only { display: none; }
+@media (min-width: 900px) {
+  .wrap { max-width: 980px; }
+  .cast-grid { grid-template-columns: repeat(4, 1fr); }
+  .rakit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+}
+.nav { align-items: stretch; }
+body.mode-video .nav, body.mode-prompt .nav { grid-template-columns: repeat(6, 1fr); }
+.nav a { font-size: 11px; padding: 8px 2px; }
+
+/* narration / frame / voice */
+.narr-block { margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--line-dim); }
+.frame-row { display: flex; gap: 10px; align-items: center; margin: 8px 0; }
+.frame-thumb {
+  width: 64px; height: 86px; object-fit: cover; border-radius: 8px;
+  border: 1px solid var(--line); background: #100c08; flex: 0 0 auto;
+}
+.voice-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.voice-status { font-size: 12px; color: var(--muted); margin: 0 0 8px; }
+.rec-on { background: #7a1f1f !important; color: #fff !important; border-color: #c45c4a !important; }
+
+/* rakit */
+.preview-box {
+  background: #050403; border: 1px solid var(--line); border-radius: 16px;
+  overflow: hidden; aspect-ratio: 9/16; max-height: 38vh; margin: 0 auto 12px;
+  display: grid; place-items: center; position: relative; width: min(100%, 240px);
+}
+.preview-box.wide { aspect-ratio: 16/9; width: 100%; max-height: 40vh; }
+.preview-box.square { aspect-ratio: 1/1; }
+.preview-box.portrait { aspect-ratio: 4/5; }
+.preview-box video, .preview-box canvas {
+  width: 100%; height: 100%; object-fit: contain; background: #000; display: block;
+}
+.preview-box .ph { color: var(--faint); text-align: center; padding: 20px; font-size: 13px; }
+.progress {
+  height: 8px; background: #1a1510; border-radius: 99px; overflow: hidden;
+  border: 1px solid var(--line-dim); margin: 8px 0;
+}
+.progress > div { height: 100%; width: 0; background: var(--gold); transition: width .15s linear; }
+#render-status { font-size: 13px; color: var(--muted); margin: 0 0 10px; }
+.key-row { display: flex; gap: 8px; align-items: center; }
+.key-row input { flex: 1; }
+.notice {
+  background: rgba(212,175,55,.08); border: 1px solid var(--line);
+  border-radius: 12px; padding: 10px 12px; font-size: 13px; color: var(--muted);
+  margin: 0 0 12px;
+}
+.notice b { color: var(--gold-2); }
+.err { color: var(--danger); font-size: 13px; margin: 8px 0 0; }
+.okmsg { color: var(--ok); font-size: 13px; margin: 8px 0 0; }
+.idea-box textarea { min-height: 96px; }
+
+@media (min-width: 900px) {
+  body.mode-prompt .nav, body.mode-video .nav { grid-template-columns: repeat(6, 1fr); }
+  .nav a { font-size: 13px; padding: 8px 10px; }
+}
   </style>
 </head>
 <body>
@@ -298,13 +366,11 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
       </div>
     </div>
     <div class="ornament" aria-hidden="true"></div>
-    <nav class="nav">
-      <a href="#proyek">Proyek</a>
-      <a href="#rasio">Rasio</a>
-      <a href="#adegan">Adegan</a>
-      <a href="#caption">Caption</a>
-      <a href="#pemeran">Pemeran</a>
-    </nav>
+    <div class="mode-switch" id="mode-switch" role="tablist" aria-label="Mode kerja">
+      <button type="button" data-mode="prompt" class="on" role="tab" aria-selected="true">Prompt saja<small>Bikin prompt, tempel ke AI gambar</small></button>
+      <button type="button" data-mode="video" role="tab" aria-selected="false">Langsung jadi video<small>Gambar + narasi + rakit di HP</small></button>
+    </div>
+    <nav class="nav" id="main-nav"></nav>
   </header>
 
   <main>
@@ -322,8 +388,11 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
         <label class="fld" id="wrap-era-custom" hidden><span>Era kustom</span>
           <input type="text" id="f-era-custom" placeholder="Tulis era / setting-nya">
         </label>
-        <div class="lbl">Gaya</div>
+        <div class="lbl">Gaya kamera</div>
         <div class="seg" id="f-style"></div>
+        <div class="lbl" style="margin-top:14px">Gaya gambar</div>
+        <div class="seg" id="f-look"></div>
+        <p class="hint" id="look-hint" style="margin-top:8px"></p>
         <div class="row" style="margin-top:14px">
           <label class="fld"><span>Jumlah adegan</span>
             <input type="number" id="f-count" min="1" max="20" step="1">
@@ -357,7 +426,19 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
       <div class="sec-head">
         <h2>Adegan <span>Isi jelas, prompt Inggrisnya langsung tempel</span></h2>
       </div>
-      <p class="hint">Tempeltin <b style="color:var(--gold-2)">Prompt gambar</b> ke Gemini atau Meta AI. Setelah gambar jadi, animasiin pakai <b style="color:var(--gold-2)">Prompt video</b> lalu gabung di CapCut.</p>
+      <div class="card idea-box" id="idea-card">
+        <div class="lbl">Isi otomatis dari ide (Gemini, teks saja)</div>
+        <label class="fld"><span>Ide cerita, singkat saja</span>
+          <textarea id="f-idea" placeholder="Contoh: POV aku prajurit Majapahit, dari fajar di atas gajah sampai raja meninjau pasukan di Bajang Ratu"></textarea>
+        </label>
+        <div class="btn-row">
+          <button type="button" class="primary" id="btn-auto-fill" data-testid="auto-fill">Isi otomatis adegan dari ide</button>
+        </div>
+        <p class="hint" style="margin:8px 0 0">Gemini cuma bantu nulis adegan, narasi, dan prompt (teks). Tombol Buat gambar di mode video memakai Pollinations (gratis, tanpa kunci, ada logo, maks. ~768px). Untuk 3D HD yang lebih tajam, salin prompt ke aplikasi Gemini atau Meta AI, lalu unggah.</p>
+        <p class="err" id="auto-err" hidden></p>
+        <p class="okmsg" id="auto-ok" hidden></p>
+      </div>
+      <p class="hint prompt-only">Di mode video ada tombol <b style="color:var(--gold-2)">Buat gambar</b> (Pollinations, gratis, ada logo). Untuk 3D yang lebih tajam, tempel <b style="color:var(--gold-2)">Prompt gambar</b> ke Gemini atau Meta AI, lalu unggah.</p>
       <div id="scene-list"></div>
       <div class="btn-row">
         <button type="button" class="primary full" id="btn-add-scene" data-testid="add-scene">+ Tambah adegan</button>
@@ -381,6 +462,156 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
       <div class="cast-grid" id="cast-grid"></div>
       <div class="btn-row" style="margin-top:12px">
         <button type="button" class="primary full" id="btn-add-cast" data-testid="add-cast">+ Tambah pemeran</button>
+      </div>
+    </section>
+
+    <section id="rakit" class="mode-video-only">
+      <div class="sec-head">
+        <h2>Rakit video <span>Gratis, di HP ini. Tidak ada yang diunggah ke server Lumi</span></h2>
+      </div>
+      <div class="rakit-grid">
+        <div>
+          <div class="preview-box" id="preview-box">
+            <div class="ph" id="preview-ph">Hasil rakitannya muncul di sini</div>
+            <canvas id="render-canvas" hidden></canvas>
+            <video id="render-preview" controls playsinline hidden></video>
+          </div>
+          <div class="progress" aria-hidden="true"><div id="render-bar"></div></div>
+          <p id="render-status">Siap merakit. Unggah gambar tiap adegan, atau pakai foto pemeran contoh.</p>
+          <div class="btn-row">
+            <button type="button" class="primary full" id="btn-render" data-testid="render-video">Rakit video</button>
+            <button type="button" class="full" id="btn-dl-webm" hidden>Unduh WebM</button>
+            <button type="button" class="full" id="btn-dl-mp4" hidden>Unduh MP4</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="lbl">Gerak &amp; transisi</div>
+          <label class="fld"><span>Ken Burns / gerak gambar</span>
+            <select id="v-kenburns">
+              <option value="auto">Otomatis (berganti tiap adegan)</option>
+              <option value="in">Zoom in</option>
+              <option value="out">Zoom out</option>
+              <option value="left">Geser kiri</option>
+              <option value="right">Geser kanan</option>
+              <option value="none">Diam</option>
+            </select>
+          </label>
+          <div class="row">
+            <label class="fld"><span>Crossfade (detik)</span>
+              <input type="number" id="v-fade" min="0" max="2" step="0.1" value="0.4">
+            </label>
+            <label class="fld"><span>Kualitas kanvas</span>
+              <select id="v-quality">
+                <option value="720">720 (lebih cepat)</option>
+                <option value="1080">1080 (lebih tajam)</option>
+              </select>
+            </label>
+          </div>
+          <label class="fld" style="display:flex;gap:8px;align-items:center">
+            <input type="checkbox" id="v-subs" checked>
+            <span style="text-transform:none;letter-spacing:0;font-size:14px;color:var(--text);font-weight:600">Subtitle dari narasi (maks. 2 baris; *kata* jadi kuning)</span>
+          </label>
+          <label class="fld" style="display:flex;gap:8px;align-items:center">
+            <input type="checkbox" id="v-title" checked>
+            <span style="text-transform:none;letter-spacing:0;font-size:14px;color:var(--text);font-weight:600">Kartu judul di awal</span>
+          </label>
+          <label class="fld"><span>Teks kartu judul (hook)</span>
+            <input type="text" id="v-title-text" placeholder="Ikut judul cerita kalau kosong">
+          </label>
+          <div class="row">
+            <label class="fld"><span>Durasi judul (detik)</span>
+              <input type="number" id="v-title-dur" min="1" max="8" step="0.2" value="2.2">
+            </label>
+            <label class="fld"><span>Volume narasi</span>
+              <input type="number" id="v-voice-vol" min="0" max="1" step="0.05" value="1">
+            </label>
+          </div>
+          <hr class="gold">
+          <div class="lbl">Musik (opsional, mp3)</div>
+          <div class="btn-row">
+            <button type="button" class="small" id="btn-music">Pilih musik</button>
+            <button type="button" class="small ghost" id="btn-music-clear">Hapus</button>
+          </div>
+          <p class="hint" id="music-name">Belum ada musik</p>
+          <label class="fld"><span>Volume musik</span>
+            <input type="number" id="v-music-vol" min="0" max="1" step="0.05" value="0.22">
+          </label>
+          <hr class="gold">
+          <div class="lbl">Suara narasi (Gemini TTS)</div>
+          <p class="notice">Pakai kunci Gemini yang sama dari Setelan. Urutan: <b>Gemini TTS</b> → <b>rekam di HP</b> → <b>unggah audio</b>. Suara browser (speechSynthesis) cuma pratinjau, <b>tidak masuk file video</b>.</p>
+          <label class="fld"><span>Suara pra-setel Gemini</span>
+            <select id="v-tts-voice">
+              <option value="Kore">Kore</option>
+              <option value="Puck">Puck</option>
+              <option value="Charon">Charon</option>
+              <option value="Fenrir">Fenrir</option>
+              <option value="Aoede">Aoede</option>
+              <option value="Zephyr">Zephyr</option>
+              <option value="Leda">Leda</option>
+              <option value="Orus">Orus</option>
+              <option value="Callirrhoe">Callirrhoe</option>
+              <option value="Autonoe">Autonoe</option>
+              <option value="Enceladus">Enceladus</option>
+              <option value="Iapetus">Iapetus</option>
+            </select>
+          </label>
+          <label class="fld"><span>Gaya bicara (opsional)</span>
+            <input type="text" id="v-tts-style" placeholder="Contoh: cerita santai, dramatis, tenang seperti dalang" autocomplete="off">
+          </label>
+          <p class="hint">Model TTS diatur di Setelan (default gemini-3.8-flash-tts).</p>
+          <div class="btn-row">
+            <button type="button" id="btn-tts-all">Buat suara Gemini untuk semua adegan</button>
+          </div>
+          <p class="hint" id="tts-note"></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="setelan">
+      <div class="sec-head">
+        <h2>Setelan Gemini <span>Teks (dan TTS) pakai kunci API kamu</span></h2>
+      </div>
+      <div class="card">
+        <p class="notice">Paket gratis Gemini API yang dipakai di sini adalah <b>teks</b> (nulis adegan, perbaiki prompt, caption) dan, kalau kuota model TTS kamu mengizinkan, <b>suara narasi</b>. Model gambar Gemini tidak ada di Free Tier. Tombol <b>Buat gambar</b> memakai Pollinations Classic (gratis, tanpa kartu, tanpa kunci): maks. area 768×768, 1 gambar / 45 detik per IP, JPEG ada logo pollinations.ai. Kualitas 3D-nya sering di bawah aplikasi Gemini atau Meta AI — untuk hasil Pixar/Disney yang lebih tajam, salin prompt ke salah satu app itu, lalu unggah. Kunci API disimpan di HP ini saja, dan hanya dikirim ke API Google.</p>
+        <label class="fld"><span>Kunci API Gemini</span>
+          <div class="key-row">
+            <input type="password" id="f-apikey" placeholder="Tempel kunci dari aistudio.google.com/apikey" autocomplete="off" spellcheck="false">
+            <button type="button" class="small" id="btn-key-toggle">Lihat</button>
+          </div>
+        </label>
+        <p class="hint" id="key-status">Belum ada kunci tersimpan.</p>
+        <div class="btn-row">
+          <button type="button" class="primary small" id="btn-key-save">Simpan kunci</button>
+          <button type="button" class="danger small" id="btn-key-del">Hapus kunci</button>
+        </div>
+        <label class="fld" style="margin-top:14px"><span>Model teks (bisa diubah)</span>
+          <input type="text" id="f-model" value="gemini-3.8-flash" autocomplete="off">
+        </label>
+        <p class="hint">Default <b>gemini-3.8-flash</b> — halaman harga resmi (dicek 24 Nov 2026) menulis token input &amp; output Free Tier sebagai Free of charge. Kalau model ditolak, app mencoba cadangan <b>gemini-3.6-flash</b> lalu <b>gemini-2.5-flash</b>. Batas permintaan harian ada di halaman kuota Google AI Studio; kami tidak mengarang angkanya.</p>
+        <label class="fld"><span>Model TTS narasi (bisa diubah)</span>
+          <input type="text" id="f-tts-model" value="gemini-3.8-flash-tts" autocomplete="off">
+        </label>
+        <p class="hint">Default <b>gemini-3.8-flash-tts</b> — model suara alami yang dipakai untuk narasi Indonesia. Halaman harga resmi menulis token input &amp; output Free Tier sebagai Free of charge. Cadangan: <b>gemini-3.8-flash-lite-tts</b>. Kuota harian/menit ada di AI Studio, bukan angka dari kami. Kunci yang dipakai sama dengan kunci Gemini di atas.</p>
+        <label class="fld"><span>Gaya bicara default</span>
+          <input type="text" id="f-tts-style" placeholder="cerita santai, dramatis, tenang seperti dalang" autocomplete="off">
+        </label>
+        <div class="btn-row">
+          <button type="button" id="btn-cap-ai">Buat caption + hashtag</button>
+        </div>
+        <p class="err" id="set-err" hidden></p>
+        <p class="okmsg" id="set-ok" hidden></p>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="lbl">Klip video AI (opsional, belum dihubungkan)</div>
+        <p class="notice">Slot kunci <b>WaveSpeed</b> disimpan di HP ini kalau nanti kamu mau uji coba klip AI. <b>Belum dipasang ke merakit video.</b> Jalan utama tetap rakit di browser, gratis, tanpa kunci ini.</p>
+        <label class="fld"><span>Kunci WaveSpeed (uji coba)</span>
+          <div class="key-row">
+            <input type="password" id="f-wavespeed" placeholder="Tempel kunci WaveSpeed (opsional)" autocomplete="off" spellcheck="false">
+            <button type="button" class="small" id="btn-ws-save">Simpan</button>
+            <button type="button" class="small danger" id="btn-ws-del">Hapus</button>
+          </div>
+        </label>
+        <p class="hint" id="ws-status">Belum ada kunci WaveSpeed. Tidak dipakai merakit video sekarang.</p>
       </div>
     </section>
   </main>
@@ -560,6 +791,7 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
         time: "fajar", mood: "majestic, epic, breath held before war",
         camera: "pov-hands", lens: "24mm", movement: "push-in",
         lighting: "golden hour sunrise backlight, light mist and dust in the air",
+        narration: 'Fajar pecah di depan candi. Dari punggung gajah perang, aku memandang ribuan tombak di bawah.'
       },
       {
         id: "s2", title: "Keris di howdah",
@@ -569,6 +801,7 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
         time: "fajar", mood: "tense pride, quiet power",
         camera: "pov-hands", lens: "24mm", movement: "handheld",
         lighting: "soft dawn light, morning haze, rim light on the gold rail",
+        narration: 'Jari ini menggenggam hulu keris. Kerajaan ini harus bertahan.'
       },
       {
         id: "s3", title: "Berbaris dengan tombak",
@@ -578,6 +811,7 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
         time: "badai", mood: "fierce, relentless, war coming",
         camera: "pov-hands", lens: "24mm", movement: "walk",
         lighting: "dark stormy red sky, volcanic ash and dust, dramatic storm light",
+        narration: 'Kami maju di bawah langit merah. Debu, tombak, dan janji pada tanah Jawa.'
       },
       {
         id: "s4", title: "Formasi di kabut pagi",
@@ -587,6 +821,7 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
         time: "pagi-kabut", mood: "quiet, cold, brotherhood, waiting",
         camera: "medium", lens: "35mm", movement: "static",
         lighting: "cool blue fog, soft overcast, low contrast, moisture in the air",
+        narration: 'Kabut pagi menutup padang. Di kiri dan kanan, saudara sebarisan. Kami menunggu perintah.'
       },
       {
         id: "s5", title: "Pawai obor di hujan",
@@ -596,6 +831,7 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
         time: "malam-hujan", mood: "grim, loyal, fire against the rain",
         camera: "follow", lens: "24mm", movement: "walk",
         lighting: "warm torchlight on wet skin and armor, cold rain, smoke and steam",
+        narration: 'Hujan tak memadamkan obor. Kami terus jalan menuju gapura.'
       },
       {
         id: "s6", title: "Keris di atas benteng",
@@ -605,6 +841,7 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
         time: "senja", mood: "heroic, lonely command, the war below",
         camera: "pov-hands", lens: "24mm", movement: "handheld",
         lighting: "late-afternoon golden light, smoke in the valley, rim light on the keris blade",
+        narration: 'Dari atas benteng, lembah penuh asap. Aku angkat keris, dan lembah itu menjawab dengan derap.'
       },
       {
         id: "s7", title: "Tameng rotan, panah berapi",
@@ -614,6 +851,7 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
         time: "malam", mood: "danger, survival, fire and breath",
         camera: "pov-hands", lens: "24mm", movement: "handheld",
         lighting: "firelight from burning arrows, sparks, deep night shadows, heat glow on the hands",
+        narration: 'Panah berapi jatuh dari langit. *Tameng rotan* ini satu-satunya dinding antara nyawa dan api.'
       },
       {
         id: "s8", title: "Raja meninjau pasukan di Bajang Ratu",
@@ -623,6 +861,7 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
         time: "senja", mood: "solemn, loyal, royal grandeur",
         camera: "wide", lens: "35mm", movement: "push-in",
         lighting: "late afternoon gold light on red brick, dust motes, long shadows",
+        narration: 'Di depan Gapura *Bajang Ratu*, Sri Baginda meninjau pasukan. Hari ini, Majapahit berdiri tegak.'
       },
     ];
     return {
@@ -632,6 +871,7 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
       style: "pov",
       duration: 5,
       ratio: "tiktok",
+      look: "cinematic3d",
       characters,
       scenes,
     };
@@ -649,14 +889,14 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
       id: uid("s-"), title: "Adegan " + i,
       characterIds: [], action: "", location: "",
       time: "senja", mood: "", camera: "pov-hands", lens: "24mm",
-      movement: "push-in", lighting: "",
+      movement: "push-in", lighting: "", narration: "", frame: "", motion: "auto",
     };
   }
 
   function blankProject() {
     return {
       title: "", era: "majapahit", eraCustom: "", style: "pov",
-      duration: 5, ratio: "tiktok",
+      duration: 5, ratio: "tiktok", look: "cinematic3d",
       characters: [], scenes: [blankScene(1)],
     };
   }
@@ -670,13 +910,23 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
       const raw = localStorage.getItem(KEY);
       if (!raw) return;
       const data = JSON.parse(raw);
-      if (data && data.scenes && data.characters) state = data;
+      if (data && data.scenes && data.characters) {
+        state = data;
+        if (typeof normalizeProject === "function") normalizeProject(state);
+      }
     } catch (e) { console.warn("load skip", e); }
   }
 
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(state)); }
-    catch (e) { toast("Gagal menyimpan (storage penuh?)"); console.warn(e); }
+    catch (e) {
+      try {
+        const slim = JSON.parse(JSON.stringify(state));
+        (slim.scenes || []).forEach(s => { delete s.voiceData; });
+        localStorage.setItem(KEY, JSON.stringify(slim));
+        console.warn("saved without voice audio (storage penuh)", e);
+      } catch (e2) { toast("Gagal menyimpan (storage penuh?)"); console.warn(e2); }
+    }
   }
 
   function ratio() { return RATIOS.find(r => r.id === state.ratio) || RATIOS[0]; }
@@ -685,18 +935,31 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
   function movOf(id) { return MOVEMENTS.find(m => m.id === id) || MOVEMENTS[0]; }
   function charById(id) { return state.characters.find(c => c.id === id); }
 
-  function realism(scene) {
-    const r = ratio();
-    const lens = scene.lens || "35mm";
-    return `hyper-realistic, photorealistic, shot on Sony A7S III, ${lens} lens, cinematic lighting, natural skin texture, film grain, 8K, ${r.text}, --ar ${r.ar}`;
+  function lookOf(st) {
+    return (st && st.look) === "photo" ? "photo" : "cinematic3d";
   }
+  function qualityTail(scene) {
+    const r = ratio();
+    const ar = `${r.text}, --ar ${r.ar}`;
+    if (lookOf(state) === "photo") {
+      const lens = scene.lens || "35mm";
+      return `hyper-realistic, photorealistic, shot on Sony A7S III, ${lens} lens, cinematic lighting, natural skin texture, film grain, 8K, ${ar}`;
+    }
+    return `3D animated film still, Pixar-style, Disney-quality cinematic 3D render, octane render, Unreal Engine 5, volumetric lighting, subsurface scattering, ultra detailed, 8K, consistent character design, stylized cinematic 3D animation, beautiful color grading, movie still from a 3D animated feature, ${ar}`;
+  }
+  function realism(scene) { return qualityTail(scene); }
 
   function negativePrompt() {
-    const bits = [
-      "no cartoon, no anime, no 3D render, no CGI look, no illustration, no painting, no plastic skin",
+    const bits = [];
+    if (lookOf(state) === "photo") {
+      bits.push("no cartoon, no anime, no 3D render, no CGI look, no illustration, no painting, no plastic skin");
+    } else {
+      bits.push("no live-action photography, no photoreal camera look, no anime, no 2D illustration, no flat painting, no low-poly, no blurry mush");
+    }
+    bits.push(
       "no text, no watermark, no logo, no subtitles, no captions, no title card",
       "no extra fingers, no extra limbs, no deformed hands, no fused fingers",
-    ];
+    );
     if (state.era === "majapahit" || state.era === "singasari" || state.era === "mataram") {
       bits.push("no Thai crown, no pointed Siamese or Khmer crown, no red-and-yellow flags, no Thai temple, no modern clothing, no sneakers, no wristwatch, no sunglasses, no neon");
     } else if (state.era === "belanda" || state.era === "jepang") {
@@ -707,6 +970,9 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
 
   function imagePrompt(scene) {
     const parts = [];
+    if (lookOf(state) !== "photo") {
+      parts.push("3D animated film still, Pixar-style, Disney-quality cinematic 3D render");
+    }
     const cam = camOf(scene.camera);
     const isPov = state.style === "pov" || scene.camera === "pov-hands";
     const chars = (scene.characterIds || []).map(charById).filter(Boolean);
@@ -751,7 +1017,8 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
     if (loc.includes("elephant") || loc.includes("gajah") || loc.includes("howdah")) extras.push("elephant breathing, howdah slightly swaying");
     if ((scene.action || "").toLowerCase().includes("march") || (scene.action || "").includes("berbaris")) extras.push("soldiers marching");
     const dur = Number(state.duration) || 5;
-    return [mov.en, ...unique(extras), `${dur} seconds`, "cinematic, realistic motion, no text"].join(", ");
+    const motion = lookOf(state) === "photo" ? "cinematic, realistic motion, no text" : "cinematic 3D animation, smooth stylized motion, consistent characters, no text";
+    return [mov.en, ...unique(extras), `${dur} seconds`, motion].join(", ");
   }
 
   function unique(arr) { return [...new Set(arr.filter(Boolean))]; }
@@ -781,7 +1048,8 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
       "STUDIO PROMPT",
       `Judul: ${state.title}`,
       `Tema: ${eraLabel()}`,
-      `Gaya: ${state.style === "pov" ? "POV orang pertama" : "Sinematik orang ketiga"}`,
+      `Gaya kamera: ${state.style === "pov" ? "POV orang pertama" : "Sinematik orang ketiga"}`,
+      `Gaya gambar: ${lookOf(state) === "photo" ? "Foto realistis" : "3D HD sinematik"}`,
       `Rasio: ${ratio().label} ${ratio().ar}`,
       `Durasi per adegan: ${state.duration} detik`,
       "",
@@ -897,6 +1165,18 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
       ["pov", "POV orang pertama", "Yang kelihatan: tangan kamu"],
       ["cinematic", "Sinematik orang ketiga", "Kamera di luar tokoh"],
     ].map(([id, a, b]) => `<button type="button" data-style="${id}" class="${state.style===id?"on":""}">${a}<small>${b}</small></button>`).join("");
+    const lookEl = $("#f-look");
+    if (lookEl) {
+      const look = lookOf(state);
+      lookEl.innerHTML = [
+        ["cinematic3d", "3D HD sinematik", "Kayak film Pixar / Disney"],
+        ["photo", "Foto realistis", "Kayak foto kamera"],
+      ].map(([id, a, b]) => `<button type="button" data-look="${id}" class="${look===id?"on":""}">${a}<small>${b}</small></button>`).join("");
+    }
+    const lh = $("#look-hint");
+    if (lh) lh.textContent = lookOf(state) === "photo"
+      ? "Prompt memakai kata kunci foto nyata (kamera, tekstur kulit, film grain)."
+      : "Prompt memakai kata kunci 3D HD (Pixar/Disney, octane/Unreal, volumetric, 8K). Gambar di app pakai Pollinations (gratis, ada logo, kualitas bisa di bawah Gemini/Meta AI).";
   }
 
   function renderRatio() {
@@ -959,6 +1239,36 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
         <label class="fld"><span>Cahaya</span>
           <input type="text" data-sf="lighting" data-sid="${esc(s.id)}" value="${esc(s.lighting)}" id="h-${esc(s.id)}">
         </label>
+        <div class="narr-block">
+          <label class="fld"><span>Narasi / dialog (Indonesia) — jadi suara + subtitle</span>
+            <textarea data-sf="narration" data-sid="${esc(s.id)}" id="nar-${esc(s.id)}" placeholder="Kalimat yang diucapkan di adegan ini">${esc(s.narration || "")}</textarea>
+          </label>
+          <div class="frame-row">
+            <img class="frame-thumb" src="${esc(frameOf(s))}" alt="Frame adegan ${n}" onerror="this.style.opacity='.3'">
+            <div>
+              <div class="lbl">Gambar untuk video</div>
+              <div class="btn-row">
+                <button type="button" class="small primary" data-act="gen-image" data-sid="${esc(s.id)}" id="gen-${esc(s.id)}">Buat gambar</button>
+                <button type="button" class="small" data-act="frame-scene" data-sid="${esc(s.id)}">Unggah</button>
+                <button type="button" class="small ghost" data-act="copy-gemini" data-sid="${esc(s.id)}">Salin &amp; buka Gemini</button>
+                <button type="button" class="small ghost" data-act="open-meta" data-sid="${esc(s.id)}">Buka Meta AI</button>
+                <button type="button" class="small ghost" data-act="frame-clear" data-sid="${esc(s.id)}">Pakai foto pemeran</button>
+              </div>
+              <p class="hint" style="margin:6px 0 0">Buat gambar: Pollinations gratis, tanpa kunci, di HP ini. Maks. ~768px, 1 gambar / 45 detik per IP, ada logo di sudut. Untuk 3D HD yang lebih tajam, salin prompt lalu buka Gemini atau Meta AI, lalu unggah.</p>
+              <p class="voice-status" id="gs-${esc(s.id)}"></p>
+            </div>
+          </div>
+          <div class="lbl">Suara adegan ini</div>
+          <div class="voice-row">
+            <button type="button" class="small" data-act="tts-scene" data-sid="${esc(s.id)}">Gemini TTS</button>
+            <button type="button" class="small" data-act="rec-scene" data-sid="${esc(s.id)}" id="rec-${esc(s.id)}">Rekam</button>
+            <button type="button" class="small" data-act="up-voice" data-sid="${esc(s.id)}">Unggah audio</button>
+            <button type="button" class="small ghost" data-act="prev-voice" data-sid="${esc(s.id)}">Pratinjau browser</button>
+          </div>
+          <p class="voice-status" id="vs-${esc(s.id)}">${esc(voiceStatus(s))}</p>
+          <button type="button" class="small prompt-only" data-act="fix-prompt" data-sid="${esc(s.id)}">Perbaiki prompt</button>
+        </div>
+        <div class="prompt-only">
         <div class="pbox struct" id="box-s-${esc(s.id)}">
           <header><span class="tag">Blok adegan</span>
             <button type="button" class="small" data-copy="struct" data-sid="${esc(s.id)}">Salin</button></header>
@@ -981,6 +1291,7 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
         </div>
         <div class="btn-row" style="margin-top:10px">
           <button type="button" class="small" data-copy="scene-all" data-sid="${esc(s.id)}">Salin satu adegan ini</button>
+        </div>
         </div>
       </div>
     </article>`;
@@ -1025,7 +1336,10 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
         <h4>Hashtag (template) <button type="button" class="small" data-copy="cap-tags">Salin</button></h4>
         <div class="pbox"><pre id="cap-tags" class="hash">${esc(cap.tags)}</pre></div>
       </div>
-      <button type="button" class="full" data-copy="cap-all">Salin caption ${esc(cap.platName)} lengkap</button>
+      <div class="btn-row">
+        <button type="button" class="full" data-copy="cap-all">Salin caption ${esc(cap.platName)} lengkap</button>
+        <button type="button" class="full" id="btn-cap-ai-2">Buat caption + hashtag (Gemini)</button>
+      </div>
     `;
   }
 
@@ -1185,11 +1499,16 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
   }
 
   function renderAll() {
+    if (typeof normalizeProject === "function") normalizeProject(state);
     renderProject();
     renderRatio();
     renderScenes();
     renderCaptions();
     renderCast();
+    if (typeof renderNav === "function") renderNav();
+    if (typeof renderMode === "function") renderMode();
+    if (typeof renderVideoSettings === "function") renderVideoSettings();
+    if (typeof renderSettings === "function") renderSettings();
   }
 
   function setSceneCount(n) {
@@ -1284,6 +1603,11 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
     $("#f-style").addEventListener("click", e => {
       const b = e.target.closest("[data-style]"); if (!b) return;
       state.style = b.dataset.style; save(); renderProject(); refreshAllPrompts();
+    });
+    const lookWrap = $("#f-look");
+    if (lookWrap) lookWrap.addEventListener("click", e => {
+      const b = e.target.closest("[data-look]"); if (!b) return;
+      state.look = b.dataset.look; save(); renderProject(); refreshAllPrompts();
     });
     $("#f-ratio").addEventListener("click", e => {
       const b = e.target.closest("[data-ratio]"); if (!b) return;
@@ -1385,10 +1709,1119 @@ hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent
     if (photo) pickPhoto(photo.dataset.cid);
   }
 
+  /* ===== Mode, settings, Gemini, rakit video ===== */
+  const SET_KEY = "prompt-studio-settings-v1";
+  const TEXT_MODELS = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-2.5-flash"];
+  const TTS_MODELS = ["gemini-3.8-flash-tts", "gemini-3.8-flash-lite-tts"];
+  const TTS_NOTE = "Default gemini-3.8-flash-tts (suara alami, termasuk Indonesia). Halaman harga resmi Gemini API (dicek 24 Nov 2026) menulis token input & output Free Tier sebagai Free of charge untuk gemini-3.8-flash-tts dan gemini-3.8-flash-lite-tts. Batas permintaan (per menit/hari) ada di kuota Google AI Studio — kami tidak mengarang angkanya. Panggilan API jalan langsung dari browser (CORS diizinkan). Kalau kuota habis atau error, rekam suara atau unggah audio.";
+
+  let uiMode = "prompt";
+  let settings = loadSettings();
+  let mediaMem = {}; // voice:${id}, frame:${id}, music
+  let recKit = null;
+  let lastRender = { webm: null, mp4: null, url: null };
+
+  function loadSettings() {
+    try {
+      const raw = localStorage.getItem(SET_KEY);
+      if (raw) return Object.assign(defaultSettings(), JSON.parse(raw));
+    } catch (e) { console.warn(e); }
+    return defaultSettings();
+  }
+  function defaultSettings() {
+    return { apiKey: "", model: "gemini-3.8-flash", ttsModel: "gemini-3.8-flash-tts", ttsVoice: "Kore", ttsStyle: "", waveSpeedKey: "" };
+  }
+  function saveSettings() {
+    const copy = Object.assign({}, settings);
+    localStorage.setItem(SET_KEY, JSON.stringify(copy));
+  }
+  function maskKey(k) {
+    if (!k) return "";
+    if (k.length <= 8) return "•".repeat(k.length);
+    return k.slice(0, 3) + "•".repeat(Math.max(4, k.length - 7)) + k.slice(-4);
+  }
+
+  function defaultVideo() {
+    return {
+      quality: "720", kenBurns: "auto", crossfade: 0.4,
+      showTitleCard: true, titleCardText: "", titleCardDur: 2.2,
+      musicName: "", musicVol: 0.22, voiceVol: 1, subtitles: true,
+    };
+  }
+  function frameOf(s) {
+    if (s && s.frame) return s.frame;
+    const ids = (s && s.characterIds) || [];
+    if (ids.includes("c-raja")) return "photos/raja.webp";
+    if (ids.includes("c-ratu")) return "photos/ratu.webp";
+    if (ids.includes("c-patih")) return "photos/mahapatih.webp";
+    return "photos/prajurit.webp";
+  }
+  function voiceStatus(s) {
+    if (s.voiceData) {
+      if (s.voiceSource === "tts") return "Ada suara Gemini TTS";
+      if (s.voiceSource === "record") return "Ada rekaman mikrofon";
+      if (s.voiceSource === "upload") return "Ada file audio terunggah";
+      return "Ada audio narasi";
+    }
+    const n = (s.narration || "").trim();
+    if (!n) return "Belum ada narasi atau audio";
+    return "Narasi sudah ada — belum ada file suara (TTS / rekam / unggah)";
+  }
+  function normalizeProject(st) {
+    if (!st.look) st.look = "cinematic3d";
+    if (!st.video) st.video = defaultVideo();
+    else st.video = Object.assign(defaultVideo(), st.video);
+    (st.scenes || []).forEach(s => {
+      if (s.narration == null) s.narration = "";
+      if (!s.motion) s.motion = "auto";
+    });
+  }
+
+  function renderNav() {
+    const prompt = [
+      ["#proyek", "Proyek"], ["#rasio", "Rasio"], ["#adegan", "Adegan"],
+      ["#caption", "Caption"], ["#pemeran", "Pemeran"], ["#setelan", "Setelan"],
+    ];
+    const video = [
+      ["#proyek", "Proyek"], ["#adegan", "Adegan"], ["#rakit", "Rakit"],
+      ["#caption", "Caption"], ["#pemeran", "Pemeran"], ["#setelan", "Setelan"],
+    ];
+    const items = uiMode === "video" ? video : prompt;
+    const nav = $("#main-nav");
+    if (!nav) return;
+    nav.innerHTML = items.map(([h, l]) => `<a href="${h}">${l}</a>`).join("");
+  }
+  function renderMode() {
+    document.body.classList.toggle("mode-video", uiMode === "video");
+    document.body.classList.toggle("mode-prompt", uiMode !== "video");
+    $$("#mode-switch [data-mode]").forEach(b => {
+      const on = b.dataset.mode === uiMode;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    renderNav();
+    const box = $("#preview-box");
+    if (box) {
+      box.classList.remove("wide", "square", "portrait");
+      const ar = (ratio() || {}).ar;
+      if (ar === "16:9") box.classList.add("wide");
+      else if (ar === "1:1") box.classList.add("square");
+      else if (ar === "4:5") box.classList.add("portrait");
+    }
+  }
+  function setMode(m) {
+    uiMode = m === "video" ? "video" : "prompt";
+    renderMode();
+    if (uiMode === "video") {
+      const el = $("#rakit");
+      if (el) el.scrollIntoView({ block: "start" });
+    }
+  }
+  function renderVideoSettings() {
+    const v = (state.video = Object.assign(defaultVideo(), state.video || {}));
+    const set = (id, val, attr="value") => { const el = $(id); if (el && document.activeElement !== el) el[attr] = val; };
+    set("#v-kenburns", v.kenBurns);
+    set("#v-fade", v.crossfade);
+    set("#v-quality", v.quality);
+    const subs = $("#v-subs"); if (subs) subs.checked = !!v.subtitles;
+    const tit = $("#v-title"); if (tit) tit.checked = !!v.showTitleCard;
+    set("#v-title-text", v.titleCardText || "");
+    set("#v-title-dur", v.titleCardDur);
+    set("#v-voice-vol", v.voiceVol);
+    set("#v-music-vol", v.musicVol);
+    const mn = $("#music-name");
+    if (mn) mn.textContent = v.musicName ? ("Musik: " + v.musicName) : "Belum ada musik";
+    const tv = $("#v-tts-voice"); if (tv) tv.value = settings.ttsVoice || "Kore";
+    const st = $("#v-tts-style"); if (st && document.activeElement !== st) st.value = settings.ttsStyle || "";
+    const note = $("#tts-note"); if (note) note.textContent = TTS_NOTE;
+  }
+  function renderSettings() {
+    const st = $("#key-status");
+    if (st) st.textContent = settings.apiKey
+      ? ("Kunci tersimpan di HP ini: " + maskKey(settings.apiKey))
+      : "Belum ada kunci tersimpan.";
+    const inp = $("#f-apikey");
+    if (inp && document.activeElement !== inp && inp.type === "password") {
+      inp.value = settings.apiKey || "";
+      inp.placeholder = settings.apiKey ? maskKey(settings.apiKey) : "Tempel kunci dari aistudio.google.com/apikey";
+    }
+    const mo = $("#f-model");
+    if (mo && document.activeElement !== mo) mo.value = settings.model || "gemini-3.8-flash";
+    const tm = $("#f-tts-model");
+    if (tm && document.activeElement !== tm) tm.value = settings.ttsModel || "gemini-3.8-flash-tts";
+    const ts = $("#f-tts-style");
+    if (ts && document.activeElement !== ts) ts.value = settings.ttsStyle || "";
+    const ws = $("#ws-status");
+    if (ws) ws.textContent = settings.waveSpeedKey
+      ? ("Kunci WaveSpeed tersimpan di HP ini: " + maskKey(settings.waveSpeedKey) + " — belum dipakai merakit video.")
+      : "Belum ada kunci WaveSpeed. Tidak dipakai merakit video sekarang.";
+    const wsi = $("#f-wavespeed");
+    if (wsi && document.activeElement !== wsi && wsi.type === "password") {
+      wsi.value = settings.waveSpeedKey || "";
+    }
+  }
+
+  /* ----- media helpers ----- */
+  function pickFile(accept, cb) {
+    const input = document.createElement("input");
+    input.type = "file"; input.accept = accept;
+    input.onchange = () => { const f = input.files && input.files[0]; if (f) cb(f); };
+    input.click();
+  }
+  function fileToDataURL(file) {
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+  }
+  async function setSceneFrame(sid, file) {
+    const s = state.scenes.find(x => x.id === sid);
+    if (!s) return;
+    s.frame = await compressImage(file, 1280, 400 * 1024);
+    save(); renderScenes();
+    toast("Gambar adegan disimpan di HP ini");
+  }
+
+  /* ----- Gemini text ----- */
+  function mapGeminiError(status, body) {
+    const msg = (body && (body.error && body.error.message)) || "";
+    if (status === 401 || status === 403 || /api[\s-]?key|permission|invalid/i.test(msg))
+      return "Kunci API tidak valid atau ditolak. Cek di aistudio.google.com/apikey, lalu simpan ulang di Setelan.";
+    if (status === 429 || /resource exhausted|quota|rate/i.test(msg))
+      return "Kuota Gemini habis atau terlalu sering dipanggil (batas Free Tier). Tunggu sebentar, atau cek kuota di Google AI Studio. Untuk suara, kamu bisa rekam atau unggah audio.";
+    if (status === 404 || /not found|not supported/i.test(msg))
+      return "Model tidak ditemukan atau tidak tersedia di paketmu. Coba ganti nama model di Setelan.";
+    if (!status) return "Tidak bisa terhubung ke API Google. Cek internet.";
+    return "Gagal memanggil Gemini" + (msg ? ": " + msg : " (kode " + status + ").");
+  }
+  function extractJSON(text) {
+    if (!text) throw new Error("Jawaban kosong");
+    const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    const raw = fence ? fence[1] : text;
+    const start = raw.indexOf("{");
+    const end = raw.lastIndexOf("}");
+    if (start < 0 || end < 0) throw new Error("Jawaban bukan JSON");
+    return JSON.parse(raw.slice(start, end + 1));
+  }
+  function extractText(data) {
+    const parts = ((((data || {}).candidates || [])[0] || {}).content || {}).parts || [];
+    return parts.map(p => p.text || "").join("\n").trim();
+  }
+  function extractAudioB64(data) {
+    const parts = ((((data || {}).candidates || [])[0] || {}).content || {}).parts || [];
+    for (const p of parts) {
+      if (p.inlineData && p.inlineData.data) return { b64: p.inlineData.data, mime: p.inlineData.mimeType || "audio/wav" };
+      if (p.inline_data && p.inline_data.data) return { b64: p.inline_data.data, mime: p.inline_data.mimeType || p.inline_data.mime_type || "audio/wav" };
+    }
+    return null;
+  }
+  async function geminiCall(kind, body, modelList) {
+    const key = (settings.apiKey || "").trim();
+    if (!key) throw new Error("Belum ada kunci API. Tempel dan simpan di Setelan dulu (aistudio.google.com/apikey).");
+    const list = unique(modelList.filter(Boolean));
+    let last = "Gagal memanggil Gemini.";
+    for (let i = 0; i < list.length; i++) {
+      const m = list[i];
+      try {
+        const url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(m) + ":generateContent";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+          body: JSON.stringify(body),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.status === 404 && i < list.length - 1) { last = mapGeminiError(res.status, json); continue; }
+        if (!res.ok) throw new Error(mapGeminiError(res.status, json));
+        if (kind === "text" && i > 0) { settings.model = m; saveSettings(); }
+        return json;
+      } catch (e) {
+        last = e.message || String(e);
+        if (/tidak ditemukan|not found/i.test(last) && i < list.length - 1) continue;
+        throw e;
+      }
+    }
+    throw new Error(last);
+  }
+  async function geminiText(userPrompt, system) {
+    const model = (settings.model || TEXT_MODELS[0]).trim();
+    const body = {
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+      generationConfig: { temperature: 0.7, responseMimeType: "application/json" },
+    };
+    const data = await geminiCall("text", body, [model, ...TEXT_MODELS]);
+    return extractJSON(extractText(data));
+  }
+
+  function lookRules() {
+    if (lookOf(state) === "photo") {
+      return "- Visual style: photorealistic, natural skin texture, no cartoon, no 3D render look.";
+    }
+    return "- Visual style: 3D animated film still, Pixar-style, Disney-quality cinematic 3D render, octane/Unreal, volumetric lighting, ultra detailed, 8K, consistent character design. Not live-action photography, not anime, not 2D illustration.";
+  }
+  function RULES() {
+    return `You are a cinematic prompt director for an Indonesian creator named Kuncoro. Return ONLY valid JSON (no markdown).
+Rules:
+- Fill structured fields; the app will assemble the final English image prompt.
+- Character "lock" must be English, detailed, reused for consistency.
+- If era is Majapahit (or similar Javanese kingdom): use authentic gold kiritamakuta (truncated-cone Javanese crown with jamang), upawita cord, kelat bahu, wavy keris, red-and-white horizontally striped gula kelapa banners (NOT red-and-yellow flags), NOT pointed Thai or Khmer crowns, Trowulan red brick, Bajang Ratu paduraksa gate when a royal gate is needed.
+${lookRules()}
+- "narration" is spoken Indonesian voiceover or dialogue, 1-2 short sentences, max about 28 words, suitable for ~5 seconds. First person if style is pov. You may wrap one key word in *asterisks* for a yellow subtitle highlight.
+- time must be one of: fajar, pagi-kabut, siang, senja, malam, malam-hujan, badai
+- camera one of: pov-hands, wide, medium, closeup, drone, low, ots, follow
+- movement one of: push-in, handheld, static, pan, dolly-out, tilt, walk
+- lens one of: 16mm, 24mm, 35mm, 50mm, 85mm
+- action, location, lighting, mood, lock, face, body, clothing: English.`;
+  }
+
+  async function autoFillFromIdea() {
+    const idea = ($("#f-idea") && $("#f-idea").value.trim()) || "";
+    const err = $("#auto-err"); const ok = $("#auto-ok");
+    if (err) { err.hidden = true; err.textContent = ""; }
+    if (ok) { ok.hidden = true; }
+    if (!idea) { if (err) { err.hidden = false; err.textContent = "Tulis ide ceritanya dulu, meski singkat."; } return; }
+    const btn = $("#btn-auto-fill");
+    if (btn) { btn.disabled = true; btn.textContent = "Lagi nulis…"; }
+    try {
+      const schemaHint = `JSON shape: {"title":"","era":"majapahit|singasari|mataram|belanda|jepang|modern|custom","style":"pov|cinematic","duration":5,"characters":[{"name":"","role":"","age":"","face":"","body":"","clothing":"","lock":""}],"scenes":[{"title":"","characterNames":[],"action":"","location":"","time":"","mood":"","camera":"","lens":"","movement":"","lighting":"","narration":""}]}`;
+      const ctx = `Current project title: ${state.title}\nEra: ${state.era}\nStyle: ${state.style}\nIdea: ${idea}\nExisting characters: ${state.characters.map(c=>c.name+" ("+c.role+")").join(", ") || "(none)"}`;
+      const data = await geminiText(ctx + "\n" + schemaHint, RULES());
+      applyAutoFill(data);
+      if (ok) { ok.hidden = false; ok.textContent = "Adegan dan pemeran sudah diisi. Cek dulu, lalu salin prompt atau rakit video."; }
+      toast("Adegan diisi dari ide");
+    } catch (e) {
+      if (err) { err.hidden = false; err.textContent = e.message || String(e); }
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = "Isi otomatis adegan dari ide"; }
+    }
+  }
+  function applyAutoFill(data) {
+    if (!data || typeof data !== "object") throw new Error("Data tidak lengkap");
+    if (data.title) state.title = String(data.title);
+    if (data.era && ERAS.some(e => e.id === data.era)) state.era = data.era;
+    if (data.style === "pov" || data.style === "cinematic") state.style = data.style;
+    if (Number(data.duration)) state.duration = Number(data.duration);
+    if (Array.isArray(data.characters) && data.characters.length) {
+      state.characters = data.characters.map((c, i) => ({
+        id: uid("c-"),
+        name: c.name || ("Tokoh " + (i+1)),
+        role: c.role || "Tokoh lain",
+        age: String(c.age || ""),
+        face: c.face || "", body: c.body || "", clothing: c.clothing || "",
+        lock: c.lock || "", lockManual: !!c.lock, photo: "",
+      }));
+    }
+    if (Array.isArray(data.scenes) && data.scenes.length) {
+      state.scenes = data.scenes.map((s, i) => {
+        const names = (s.characterNames || []).map(n => String(n).toLowerCase());
+        const ids = state.characters.filter(c => names.some(n => c.name.toLowerCase().includes(n) || n.includes(c.name.toLowerCase()))).map(c => c.id);
+        const times = TIMES.map(t => t.id);
+        const cams = CAMERAS.map(t => t.id);
+        const movs = MOVEMENTS.map(t => t.id);
+        return {
+          id: uid("s-"),
+          title: s.title || ("Adegan " + (i+1)),
+          characterIds: ids,
+          action: s.action || "", location: s.location || "",
+          time: times.includes(s.time) ? s.time : "senja",
+          mood: s.mood || "",
+          camera: cams.includes(s.camera) ? s.camera : (state.style === "pov" ? "pov-hands" : "wide"),
+          lens: LENSES.includes(s.lens) ? s.lens : "35mm",
+          movement: movs.includes(s.movement) ? s.movement : "push-in",
+          lighting: s.lighting || "",
+          narration: s.narration || "",
+          frame: "", motion: "auto",
+        };
+      });
+    }
+    save(); renderAll();
+  }
+
+  async function fixPrompt(sid) {
+    const s = state.scenes.find(x => x.id === sid);
+    if (!s) return;
+    try {
+      toast("Meminta perbaikan prompt…");
+      const data = await geminiText(
+        `Improve this scene for a ${lookOf(state) === "photo" ? "photorealistic cinematic" : "Pixar-style Disney-quality cinematic 3D"} prompt. Keep meaning, make action/location/lighting/mood more specific and visual. Also improve Indonesian narration if weak.\nTitle: ${s.title}\nAction: ${s.action}\nLocation: ${s.location}\nTime: ${s.time}\nMood: ${s.mood}\nCamera: ${s.camera}\nLighting: ${s.lighting}\nNarration: ${s.narration}\nEra: ${eraFlavor(state)}\nStyle: ${state.style}\nLook: ${lookOf(state)}\nReturn JSON: {"title","action","location","time","mood","camera","lens","movement","lighting","narration"}`,
+        RULES()
+      );
+      ["title","action","location","mood","lighting","narration"].forEach(k => { if (data[k]) s[k] = String(data[k]); });
+      if (TIMES.some(t => t.id === data.time)) s.time = data.time;
+      if (CAMERAS.some(t => t.id === data.camera)) s.camera = data.camera;
+      if (LENSES.includes(data.lens)) s.lens = data.lens;
+      if (MOVEMENTS.some(t => t.id === data.movement)) s.movement = data.movement;
+      save(); renderScenes(); toast("Prompt adegan diperbaiki");
+    } catch (e) { toast(e.message || "Gagal memperbaiki"); }
+  }
+
+  async function captionsWithGemini() {
+    const err = $("#set-err"); const ok = $("#set-ok");
+    if (err) err.hidden = true;
+    if (ok) ok.hidden = true;
+    try {
+      const data = await geminiText(
+        `Write social captions for this short cinematic story.\nTitle: ${state.title}\nEra: ${eraLabel()}\nStyle: ${state.style}\nScenes: ${state.scenes.map(s=>s.title).join(" — ")}\nNarration sample: ${state.scenes.map(s=>s.narration).filter(Boolean).slice(0,3).join(" / ")}\nReturn JSON: {"hook":"","descId":"","descEn":"","tiktokTags":"","youtubeTags":"","igTags":"","fbTags":""}. Indonesian hook + descId, short English descEn. Hashtags are templates, do not claim they are guaranteed viral. Include platform-appropriate tags (#fyp for TikTok, #shorts for YouTube).`,
+        "Return only JSON. Honest, storytelling tone, no fake historical claims, no 'viral guaranteed' language."
+      );
+      state._aiCaption = data;
+      renderCaptions = (function(orig) {
+        return function() {
+          orig();
+        };
+      })(renderCaptions);
+      // Patch buildCaption once via overlay
+      window.__aiCap = data;
+      if (ok) { ok.hidden = false; ok.textContent = "Caption Gemini sudah dibuat. Buka tab Caption, lalu salin. Kamu bisa ganti manual."; }
+      toast("Caption Gemini siap");
+      const cap = $("#caption"); if (cap) cap.scrollIntoView({ block: "start" });
+      renderCaptions();
+    } catch (e) {
+      if (err) { err.hidden = false; err.textContent = e.message || String(e); }
+      toast(e.message || "Gagal buat caption");
+    }
+  }
+
+  const _buildCaption = buildCaption;
+  buildCaption = function(plat) {
+    const base = _buildCaption(plat);
+    const ai = window.__aiCap;
+    if (!ai) return base;
+    const tags = plat === "tiktok" ? ai.tiktokTags : plat === "youtube" ? ai.youtubeTags : plat === "ig" ? ai.igTags : ai.fbTags;
+    return {
+      plat: base.plat, platName: base.platName,
+      hook: ai.hook || base.hook,
+      desc: [ai.descId, ai.descEn].filter(Boolean).join("\n\n") || base.desc,
+      tags: tags || base.tags,
+    };
+  };
+
+  /* ----- TTS + record + upload ----- */
+  async function ttsForScene(sid) {
+    const s = state.scenes.find(x => x.id === sid);
+    if (!s) return;
+    const text = (s.narration || "").replace(/\*/g, "").trim();
+    if (!text) { toast("Isi narasinya dulu"); return; }
+    toast("Meminta suara Gemini…");
+    const model = (settings.ttsModel || TTS_MODELS[0]).trim();
+    const style = (settings.ttsStyle || "").trim();
+    const spoken = style
+      ? ("Speak in Indonesian. Delivery style: " + style + ". Read this narration naturally and exactly:\n\n" + text)
+      : ("Speak in Indonesian. Read this narration naturally and exactly:\n\n" + text);
+    const body = {
+      contents: [{ parts: [{ text: spoken }] }],
+      generationConfig: {
+        responseModalities: ["AUDIO"],
+        speechConfig: {
+          voiceConfig: { prebuiltVoiceConfig: { voiceName: settings.ttsVoice || "Kore" } }
+        }
+      }
+    };
+    const data = await geminiCall("tts", body, [model, ...TTS_MODELS]);
+    const aud = extractAudioB64(data);
+    if (!aud) throw new Error("Gemini tidak mengirim audio. Cek model TTS dan kuota di AI Studio.");
+    const mime = aud.mime || "audio/wav";
+    s.voiceData = "data:" + mime + ";base64," + aud.b64;
+    s.voiceSource = "tts";
+    save(); renderScenes(); toast("Suara TTS tersimpan di HP ini");
+  }
+  async function ttsAll() {
+    const list = state.scenes.filter(s => (s.narration || "").trim());
+    if (!list.length) { toast("Belum ada narasi"); return; }
+    for (const s of list) {
+      try { await ttsForScene(s.id); }
+      catch (e) { toast(e.message || "TTS gagal"); break; }
+    }
+  }
+  function previewBrowserVoice(sid) {
+    const s = state.scenes.find(x => x.id === sid);
+    if (!s) return;
+    const text = (s.narration || "").trim();
+    if (!text) { toast("Isi narasinya dulu"); return; }
+    if (!window.speechSynthesis) { toast("Pratinjau suara browser tidak tersedia di sini"); return; }
+    const u = new SpeechSynthesisUtterance(text.replace(/\*/g, ""));
+    u.lang = "id-ID";
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+    toast("Ini pratinjau di HP saja — tidak masuk ke file video");
+  }
+  async function toggleRecord(sid) {
+    if (recKit && recKit.sid === sid) { stopRecord(); return; }
+    if (recKit) stopRecord();
+    const s = state.scenes.find(x => x.id === sid);
+    if (!s) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast("Mikrofon tidak tersedia di browser ini"); return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus"
+        : (MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "");
+      const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      const chunks = [];
+      rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+      rec.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
+        s.voiceData = await blobToDataURL(blob);
+        s.voiceSource = "record";
+        save(); renderScenes();
+        toast("Rekaman disimpan di HP ini");
+      };
+      recKit = { rec, sid, stream };
+      rec.start();
+      const btn = $("#rec-" + sid);
+      if (btn) { btn.classList.add("rec-on"); btn.textContent = "Berhenti"; }
+      toast("Merekam… ketuk Berhenti kalau sudah");
+    } catch (e) {
+      toast("Tidak bisa mengakses mikrofon");
+    }
+  }
+  function stopRecord() {
+    if (!recKit) return;
+    try { if (recKit.rec.state !== "inactive") recKit.rec.stop(); } catch (e) {}
+    recKit = null;
+  }
+  function blobToDataURL(blob) {
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result);
+      r.onerror = rej;
+      r.readAsDataURL(blob);
+    });
+  }
+  async function uploadVoice(sid) {
+    const s = state.scenes.find(x => x.id === sid);
+    if (!s) return;
+    pickFile("audio/*,.mp3,.wav,.m4a,.ogg,.webm", async (file) => {
+      s.voiceData = await fileToDataURL(file);
+      s.voiceSource = "upload";
+      save(); renderScenes();
+      toast("Audio diunggah ke HP ini");
+    });
+  }
+
+  /* ----- Renderer ----- */
+  function canvasSize() {
+    const ar = (ratio() || {}).ar || "9:16";
+    const hi = (state.video && state.video.quality) === "1080";
+    const map = {
+      "9:16": hi ? [1080, 1920] : [720, 1280],
+      "16:9": hi ? [1920, 1080] : [1280, 720],
+      "4:5":  hi ? [1080, 1350] : [864, 1080],
+      "1:1":  hi ? [1080, 1080] : [720, 720],
+    };
+    return map[ar] || (hi ? [1080, 1920] : [720, 1280]);
+  }
+  function pickRecorderMime() {
+    const cands = [
+      "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
+      "video/mp4;codecs=avc1,mp4a.40.2",
+      "video/mp4",
+      "video/webm;codecs=vp9,opus",
+      "video/webm;codecs=vp8,opus",
+      "video/webm",
+    ];
+    return cands.find(t => MediaRecorder.isTypeSupported(t)) || "";
+  }
+  function loadImg(src) {
+    return new Promise((res, rej) => {
+      const im = new Image();
+      im.crossOrigin = "anonymous";
+      im.onload = () => res(im);
+      im.onerror = () => rej(new Error("Gagal memuat gambar " + src));
+      im.src = src;
+    });
+  }
+  async function decodeDataAudio(ctx, dataUrl) {
+    if (!dataUrl) return null;
+    const bin = dataUrl.split(",")[1];
+    if (!bin) return null;
+    const raw = atob(bin);
+    const bytes = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+    try {
+      return await ctx.decodeAudioData(bytes.buffer.slice(0));
+    } catch (e) {
+      console.warn("decode audio", e);
+      return null;
+    }
+  }
+  function motionFor(i, scene) {
+    const m = (scene && scene.motion && scene.motion !== "auto") ? scene.motion : ((state.video && state.video.kenBurns) || "auto");
+    if (m && m !== "auto") return m;
+    return ["in", "out", "left", "right"][i % 4];
+  }
+  function drawCoverKB(ctx, img, t01, motion, W, H) {
+    const ir = img.width / img.height, cr = W / H;
+    let bw, bh;
+    if (ir > cr) { bh = H; bw = H * ir; }
+    else { bw = W; bh = W / ir; }
+    const z0 = 1, z1 = 1.14;
+    let z = 1, ox = 0, oy = 0;
+    if (motion === "in") z = z0 + (z1 - z0) * t01;
+    else if (motion === "out") z = z1 - (z1 - z0) * t01;
+    else if (motion === "left") { z = 1.1; ox = (0.5 - t01) * 0.14 * bw; }
+    else if (motion === "right") { z = 1.1; ox = (t01 - 0.5) * 0.14 * bw; }
+    else z = 1;
+    const dw = bw * z, dh = bh * z;
+    ctx.drawImage(img, (W - dw) / 2 + ox, (H - dh) / 2 + oy, dw, dh);
+  }
+  function wrapTokens(ctx, text, maxW, maxLines) {
+    const tokens = [];
+    String(text || "").split(/(\*[^*]+\*)/g).forEach(part => {
+      if (!part) return;
+      const hi = /^\*[^*]+\*$/.test(part);
+      const words = (hi ? part.slice(1, -1) : part).split(/(\s+)/);
+      words.forEach(w => { if (w) tokens.push({ t: w, hi }); });
+    });
+    const lines = [];
+    let cur = [];
+    let w = 0;
+    const widthOf = arr => arr.reduce((s, x) => s + ctx.measureText(x.t).width, 0);
+    tokens.forEach(tok => {
+      const tw = ctx.measureText(tok.t).width;
+      if (cur.length && w + tw > maxW) {
+        lines.push(cur); cur = []; w = 0;
+      }
+      cur.push(tok); w += tw;
+    });
+    if (cur.length) lines.push(cur);
+    if (lines.length > maxLines) {
+      const kept = lines.slice(0, maxLines);
+      const last = kept[maxLines - 1];
+      last.push({ t: "…", hi: false });
+      return kept;
+    }
+    return lines;
+  }
+  function drawSubtitle(ctx, text, W, H) {
+    const raw = String(text || "").trim();
+    if (!raw) return;
+    const fontSize = Math.max(28, Math.round(H * 0.042));
+    ctx.font = `700 ${fontSize}px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    const maxW = W * 0.86;
+    const lines = wrapTokens(ctx, raw, maxW, 2);
+    const lineH = fontSize * 1.35;
+    const boxH = lineH * lines.length + fontSize * 0.7;
+    const boxY = H - boxH - H * 0.06;
+    const boxX = W * 0.05;
+    const boxW = W * 0.9;
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.fillRect(boxX, boxY, boxW, boxH);
+    lines.forEach((line, i) => {
+      const lw = line.reduce((s, x) => s + ctx.measureText(x.t).width, 0);
+      let x = (W - lw) / 2;
+      const y = boxY + fontSize * 0.85 + i * lineH;
+      line.forEach(tok => {
+        ctx.lineWidth = Math.max(4, fontSize * 0.14);
+        ctx.strokeStyle = "rgba(0,0,0,0.85)";
+        ctx.fillStyle = tok.hi ? "#f3dd9b" : "#fff8e8";
+        ctx.strokeText(tok.t, x, y);
+        ctx.fillText(tok.t, x, y);
+        x += ctx.measureText(tok.t).width;
+      });
+    });
+  }
+  function drawTitleCard(ctx, W, H, text, t01) {
+    ctx.fillStyle = "#0c0a07";
+    ctx.fillRect(0, 0, W, H);
+    // faint pattern
+    ctx.strokeStyle = "rgba(212,175,55,0.2)";
+    ctx.lineWidth = Math.max(2, W * 0.006);
+    const p = W * 0.08;
+    ctx.strokeRect(p, p, W - 2 * p, H - 2 * p);
+    ctx.fillStyle = "#f3dd9b";
+    const fs = Math.max(36, Math.round(W * 0.07));
+    ctx.font = `700 ${fs}px "Palatino Linotype", Palatino, Georgia, serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const words = String(text || "").split(" ");
+    const lines = [];
+    let cur = "";
+    words.forEach(w => {
+      const tryL = cur ? cur + " " + w : w;
+      if (ctx.measureText(tryL).width > W * 0.78 && cur) { lines.push(cur); cur = w; }
+      else cur = tryL;
+    });
+    if (cur) lines.push(cur);
+    const startY = H / 2 - ((lines.length - 1) * fs * 1.2) / 2;
+    ctx.globalAlpha = Math.min(1, t01 * 3);
+    lines.slice(0, 4).forEach((ln, i) => ctx.fillText(ln, W / 2, startY + i * fs * 1.2));
+    ctx.globalAlpha = 1;
+  }
+
+  function setStatus(msg) {
+    const el = $("#render-status");
+    if (el) el.textContent = msg;
+  }
+  function setBar(p) {
+    const el = $("#render-bar");
+    if (el) el.style.width = Math.max(0, Math.min(100, p * 100)) + "%";
+  }
+
+  async function renderMovie(opts) {
+    opts = opts || {};
+    const all = state.scenes.slice();
+    const scenes = (opts.sceneLimit ? all.slice(0, opts.sceneLimit) : all);
+    if (!scenes.length) throw new Error("Belum ada adegan");
+    const [W, H] = opts.size || canvasSize();
+    const fps = opts.fps || 30;
+    const fade = Math.max(0, Number((state.video || {}).crossfade) || 0);
+    const forceDur = opts.duration;
+    const titleOn = opts.skipTitle ? false : !!(state.video && state.video.showTitleCard);
+    const titleText = (state.video && state.video.titleCardText) || state.title || "Studio Prompt";
+    const titleDur = titleOn ? Number((state.video && state.video.titleCardDur) || 2.2) : 0;
+
+    setStatus("Memuat gambar…");
+    const imgs = [];
+    for (const s of scenes) imgs.push(await loadImg(frameOf(s)));
+
+    const canvas = $("#render-canvas");
+    const preview = $("#render-preview");
+    const ph = $("#preview-ph");
+    canvas.width = W; canvas.height = H;
+    canvas.hidden = false;
+    if (preview) preview.hidden = true;
+    if (ph) ph.hidden = true;
+
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioCtx();
+    if (audioCtx.state === "suspended") await audioCtx.resume();
+    const dest = audioCtx.createMediaStreamDestination();
+    const master = audioCtx.createGain();
+    master.gain.value = 1;
+    master.connect(dest);
+
+    const voiceBufs = [];
+    for (const s of scenes) voiceBufs.push(await decodeDataAudio(audioCtx, s.voiceData));
+
+    // timeline
+    const clips = [];
+    let t = 0;
+    if (titleDur > 0) { clips.push({ type: "title", start: 0, end: titleDur }); t = titleDur; }
+    scenes.forEach((s, i) => {
+      const base = forceDur || Number(s.sceneDur) || Number(state.duration) || 5;
+      const d = Math.max(base, voiceBufs[i] ? voiceBufs[i].duration : 0);
+      if (i > 0 && fade) t -= fade;
+      clips.push({ type: "scene", i, start: t, end: t + d, dur: d, scene: s });
+      t += d;
+    });
+    const total = t;
+
+    // schedule audio slightly after start to sync with first visual frame
+    const pre = 0.08;
+    const startAt = audioCtx.currentTime + pre;
+    let cursor = titleDur;
+    voiceBufs.forEach((buf, i) => {
+      if (i > 0 && fade) cursor -= fade;
+      if (buf) {
+        const src = audioCtx.createBufferSource();
+        src.buffer = buf;
+        const g = audioCtx.createGain();
+        g.gain.value = Number((state.video && state.video.voiceVol) ?? 1);
+        src.connect(g); g.connect(master);
+        src.start(startAt + cursor);
+      }
+      const base = forceDur || Number(scenes[i].sceneDur) || Number(state.duration) || 5;
+      cursor += Math.max(base, buf ? buf.duration : 0);
+    });
+    if (mediaMem.music) {
+      const mbuf = await decodeDataAudio(audioCtx, mediaMem.music);
+      if (mbuf) {
+        const src = audioCtx.createBufferSource();
+        src.buffer = mbuf; src.loop = true;
+        const g = audioCtx.createGain();
+        g.gain.value = Number((state.video && state.video.musicVol) ?? 0.22);
+        src.connect(g); g.connect(master);
+        src.start(startAt);
+        src.stop(startAt + total + 0.2);
+      }
+    }
+    // keep-alive silent tone so the audio track stays alive
+    const osc = audioCtx.createOscillator();
+    const og = audioCtx.createGain();
+    og.gain.value = 0.00008;
+    osc.connect(og); og.connect(master);
+    osc.start();
+
+    const ctx = canvas.getContext("2d");
+    const vStream = canvas.captureStream(fps);
+    const mixed = new MediaStream([
+      ...vStream.getVideoTracks(),
+      ...dest.stream.getAudioTracks(),
+    ]);
+    const mime = pickRecorderMime();
+    if (!window.MediaRecorder) throw new Error("Browser ini tidak bisa merekam video (MediaRecorder).");
+    const rec = mime ? new MediaRecorder(mixed, { mimeType: mime, videoBitsPerSecond: 5_000_000 })
+                     : new MediaRecorder(mixed, { videoBitsPerSecond: 5_000_000 });
+    const chunks = [];
+    rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+
+    const stopped = new Promise((resolve, reject) => {
+      rec.onstop = () => resolve(new Blob(chunks, { type: rec.mimeType || mime || "video/webm" }));
+      rec.onerror = e => reject(e.error || new Error("Rekaman gagal"));
+    });
+
+    function drawAt(now) {
+      ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
+      const active = clips.filter(c => now >= c.start && now < c.end + 0.0001);
+      if (!active.length) {
+        const last = clips[clips.length - 1];
+        if (last) drawClip(last, 1, 1);
+        return;
+      }
+      if (active.length === 1) {
+        const c = active[0];
+        drawClip(c, (now - c.start) / Math.max(0.001, c.end - c.start), 1);
+      } else {
+        // overlap: previous then next with alpha
+        const a = active[0], b = active[active.length - 1];
+        const fadeT = (now - b.start) / Math.max(0.001, fade);
+        drawClip(a, (now - a.start) / Math.max(0.001, a.end - a.start), 1);
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, Math.min(1, fadeT));
+        drawClip(b, (now - b.start) / Math.max(0.001, b.end - b.start), 1);
+        ctx.restore();
+      }
+    }
+    function drawClip(c, t01, alpha) {
+      if (c.type === "title") {
+        drawTitleCard(ctx, W, H, titleText, t01);
+        return;
+      }
+      const img = imgs[c.i];
+      drawCoverKB(ctx, img, Math.max(0, Math.min(1, t01)), motionFor(c.i, c.scene), W, H);
+      if (state.video && state.video.subtitles) {
+        drawSubtitle(ctx, c.scene.narration || "", W, H);
+      }
+    }
+
+    setStatus("Merakit " + total.toFixed(1) + " detik…");
+    rec.start(200);
+    const visStart = performance.now() + pre * 1000;
+    await new Promise(r => setTimeout(r, pre * 1000));
+
+    await new Promise((resolve, reject) => {
+      function loop() {
+        const now = (performance.now() - visStart) / 1000;
+        if (now >= total) {
+          drawAt(total - 0.001);
+          setBar(1);
+          try { rec.stop(); } catch (e) {}
+          try { osc.stop(); } catch (e) {}
+          resolve();
+          return;
+        }
+        drawAt(Math.max(0, now));
+        setBar(now / total);
+        requestAnimationFrame(loop);
+      }
+      requestAnimationFrame(loop);
+    });
+
+    const blob = await stopped;
+    try { await audioCtx.close(); } catch (e) {}
+    canvas.hidden = true;
+    const url = URL.createObjectURL(blob);
+    if (lastRender.url) URL.revokeObjectURL(lastRender.url);
+    lastRender.url = url;
+    lastRender.blob = blob;
+    lastRender.mime = blob.type || mime;
+    lastRender.webm = /webm/i.test(lastRender.mime) ? blob : lastRender.webm;
+    lastRender.mp4 = /mp4/i.test(lastRender.mime) ? blob : lastRender.mp4;
+    if (preview) {
+      preview.src = url;
+      preview.hidden = false;
+    }
+    const isMp4 = /mp4/i.test(lastRender.mime);
+    const btnW = $("#btn-dl-webm");
+    const btnM = $("#btn-dl-mp4");
+    if (btnW) { btnW.hidden = isMp4; }
+    if (btnM) { btnM.hidden = !isMp4; }
+    // If we got webm, still show webm download; mp4 only when recorded as mp4
+    if (btnW) btnW.hidden = false;
+    if (isMp4 && btnM) btnM.hidden = false;
+    if (isMp4 && btnW) btnW.hidden = true;
+    setStatus("Selesai · " + (isMp4 ? "MP4" : "WebM") + " · " + Math.round(blob.size / 1024) + " KB. Semua proses di HP ini.");
+    return blob;
+  }
+
+  function downloadBlob(blob, name) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+
+
+  /* ----- in-app image generation (Pollinations Classic, free, no key) ----- */
+  let genBusy = false;
+  function pollSize() {
+    const ar = ((ratio() || {}).ar || "9:16").split(":").map(Number);
+    const aw = ar[0] || 9, ah = ar[1] || 16;
+    const area = 768 * 768; // official free cap
+    let w = Math.floor(Math.sqrt(area * aw / ah));
+    let h = Math.floor(w * ah / aw);
+    while (w * h > area) { w--; h = Math.floor(w * ah / aw); }
+    return [Math.max(64, w), Math.max(64, h)];
+  }
+  async function generateSceneImage(sid) {
+    const s = state.scenes.find(x => x.id === sid);
+    if (!s) return;
+    if (genBusy) { toast("Tunggu, satu gambar sedang dibuat (batas 1 / 45 detik)"); return; }
+    const status = $("#gs-" + sid);
+    const btn = $("#gen-" + sid);
+    const setS = (msg, isErr) => { if (status) { status.textContent = msg; status.style.color = isErr ? "var(--danger)" : "var(--muted)"; } };
+    const [w, h] = pollSize();
+    const prompt = (function () {
+      const full = imagePrompt(s);
+      const max = 1800;
+      if (full.length <= max) return full;
+      const tail = qualityTail(s);
+      return full.slice(0, Math.max(200, max - tail.length - 20)) + ", " + tail;
+    })();
+    const seed = Math.floor(Math.random() * 1e9);
+    const url = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) + "?width=" + w + "&height=" + h + "&seed=" + seed;
+    genBusy = true;
+    if (btn) { btn.disabled = true; btn.textContent = "Membuat…"; }
+    setS("Sedang membuat gambar " + w + "×" + h + "… bisa 15–40 detik.");
+    try {
+      const res = await fetch(url, { method: "GET" });
+      const retry = res.headers.get("Retry-After");
+      if (res.status === 402 || res.status === 429) {
+        const sec = retry ? Math.ceil(Number(retry)) : 45;
+        throw new Error("Batas gratis Pollinations: 1 gambar / 45 detik per IP. Tunggu " + sec + " detik, lalu coba lagi.");
+      }
+      if (res.status === 503) {
+        const sec = retry ? Math.ceil(Number(retry)) : 10;
+        throw new Error("Layanan Pollinations sedang penuh. Coba lagi dalam " + sec + " detik, atau salin prompt ke Gemini / Meta AI.");
+      }
+      if (!res.ok) throw new Error("Gagal membuat gambar (kode " + res.status + "). Coba lagi, atau salin prompt ke Gemini / Meta AI.");
+      const blob = await res.blob();
+      if (!String(blob.type || "").startsWith("image/")) {
+        let extra = "";
+        try { extra = " " + await blob.text(); } catch (e) {}
+        throw new Error("Server tidak mengirim gambar." + (extra ? " " + extra.slice(0, 160) : ""));
+      }
+      const dataUrl = await blobToDataURL(blob);
+      s.frame = dataUrl;
+      s.frameSource = "pollinations";
+      save(); renderScenes();
+      setS("Gambar masuk ke adegan ini (ada logo Pollinations). Untuk hasil 3D yang lebih tajam, salin prompt ke Gemini atau Meta AI lalu unggah.");
+      toast("Gambar dibuat dan dipakai di adegan ini");
+    } catch (e) {
+      setS(e.message || String(e), true);
+      toast(e.message || "Gagal membuat gambar");
+      throw e;
+    } finally {
+      genBusy = false;
+      const b2 = $("#gen-" + sid);
+      if (b2) { b2.disabled = false; b2.textContent = "Buat gambar"; }
+    }
+  }
+  function copyAndOpen(sid, which) {
+    const s = state.scenes.find(x => x.id === sid);
+    if (!s) return;
+    const text = imagePrompt(s);
+    copyText(text);
+    const url = which === "meta" ? "https://www.meta.ai/" : "https://gemini.google.com/app";
+    window.open(url, "_blank", "noopener");
+    toast("Prompt tersalin. Tempel di tab baru, lalu unggah gambarnya ke sini.");
+  }
+
+  /* ----- bind features ----- */
+  function bindFeatures() {
+    const ms = $("#mode-switch");
+    if (ms) ms.addEventListener("click", e => {
+      const b = e.target.closest("[data-mode]");
+      if (b) setMode(b.dataset.mode);
+    });
+    const auto = $("#btn-auto-fill");
+    if (auto) auto.addEventListener("click", () => autoFillFromIdea());
+    const cap1 = $("#btn-cap-ai");
+    if (cap1) cap1.addEventListener("click", () => captionsWithGemini());
+    document.addEventListener("click", e => {
+      if (e.target && e.target.id === "btn-cap-ai-2") captionsWithGemini();
+    });
+
+    $("#scene-list").addEventListener("click", async e => {
+      const tts = e.target.closest("[data-act=tts-scene]");
+      const rec = e.target.closest("[data-act=rec-scene]");
+      const up = e.target.closest("[data-act=up-voice]");
+      const prev = e.target.closest("[data-act=prev-voice]");
+      const fix = e.target.closest("[data-act=fix-prompt]");
+      const fr = e.target.closest("[data-act=frame-scene]");
+      const cl = e.target.closest("[data-act=frame-clear]");
+      const gen = e.target.closest("[data-act=gen-image]");
+      const cg = e.target.closest("[data-act=copy-gemini]");
+      const om = e.target.closest("[data-act=open-meta]");
+      try {
+        if (tts) await ttsForScene(tts.dataset.sid);
+        if (rec) await toggleRecord(rec.dataset.sid);
+        if (up) uploadVoice(up.dataset.sid);
+        if (prev) previewBrowserVoice(prev.dataset.sid);
+        if (fix) await fixPrompt(fix.dataset.sid);
+        if (fr) pickFile("image/*", f => setSceneFrame(fr.dataset.sid, f));
+        if (cl) {
+          const s = state.scenes.find(x => x.id === cl.dataset.sid);
+          if (s) { s.frame = ""; save(); renderScenes(); }
+        }
+        if (gen) await generateSceneImage(gen.dataset.sid);
+        if (cg) copyAndOpen(cg.dataset.sid, "gemini");
+        if (om) copyAndOpen(om.dataset.sid, "meta");
+      } catch (err) {
+        toast(err.message || "Gagal");
+      }
+    });
+
+    const bindNum = (id, fn) => {
+      const el = $(id); if (!el) return;
+      el.addEventListener("input", () => { fn(el); save(); });
+      el.addEventListener("change", () => { fn(el); save(); });
+    };
+    bindNum("#v-kenburns", el => { state.video.kenBurns = el.value; });
+    bindNum("#v-fade", el => { state.video.crossfade = Number(el.value) || 0; });
+    bindNum("#v-quality", el => { state.video.quality = el.value; });
+    bindNum("#v-title-text", el => { state.video.titleCardText = el.value; });
+    bindNum("#v-title-dur", el => { state.video.titleCardDur = Number(el.value) || 2; });
+    bindNum("#v-voice-vol", el => { state.video.voiceVol = Number(el.value); });
+    bindNum("#v-music-vol", el => { state.video.musicVol = Number(el.value); });
+    const vs = $("#v-subs"); if (vs) vs.addEventListener("change", () => { state.video.subtitles = vs.checked; save(); });
+    const vt = $("#v-title"); if (vt) vt.addEventListener("change", () => { state.video.showTitleCard = vt.checked; save(); });
+    const tv = $("#v-tts-voice"); if (tv) tv.addEventListener("change", () => { settings.ttsVoice = tv.value; saveSettings(); });
+    const vst = $("#v-tts-style"); if (vst) vst.addEventListener("input", () => {
+      settings.ttsStyle = vst.value; saveSettings();
+      const fs = $("#f-tts-style"); if (fs && document.activeElement !== fs) fs.value = settings.ttsStyle;
+    });
+
+    const bm = $("#btn-music");
+    if (bm) bm.addEventListener("click", () => pickFile("audio/mpeg,audio/mp3,audio/*", async (f) => {
+      mediaMem.music = await fileToDataURL(f);
+      state.video.musicName = f.name;
+      save(); renderVideoSettings();
+      toast("Musik dipasang (tersimpan selama sesi ini)");
+    }));
+    const bmc = $("#btn-music-clear");
+    if (bmc) bmc.addEventListener("click", () => {
+      mediaMem.music = ""; state.video.musicName = ""; save(); renderVideoSettings();
+    });
+
+    const br = $("#btn-render");
+    if (br) br.addEventListener("click", async () => {
+      br.disabled = true;
+      try {
+        await renderMovie();
+        toast("Video siap diunduh");
+      } catch (e) {
+        setStatus(e.message || "Gagal merakit");
+        toast(e.message || "Gagal merakit");
+        console.warn(e);
+      } finally { br.disabled = false; }
+    });
+    const dw = $("#btn-dl-webm");
+    if (dw) dw.addEventListener("click", () => {
+      const b = lastRender.webm || lastRender.blob;
+      if (b) downloadBlob(b, (state.title || "video").replace(/[^\w\-]+/g, "_") + ".webm");
+    });
+    const dm = $("#btn-dl-mp4");
+    if (dm) dm.addEventListener("click", () => {
+      const b = lastRender.mp4 || (/mp4/i.test(lastRender.mime) && lastRender.blob);
+      if (b) downloadBlob(b, (state.title || "video").replace(/[^\w\-]+/g, "_") + ".mp4");
+      else toast("Browser ini belum menghasilkan MP4. Unduh WebM, atau buka di Chrome terbaru.");
+    });
+
+    const btnTtsAll = $("#btn-tts-all");
+    if (btnTtsAll) btnTtsAll.addEventListener("click", () => ttsAll().catch(e => toast(e.message || "TTS gagal")));
+
+    $("#btn-key-save").addEventListener("click", () => {
+      const v = ($("#f-apikey").value || "").trim();
+      if (!v) { toast("Tempel kunci API-nya dulu"); return; }
+      settings.apiKey = v;
+      settings.model = ($("#f-model").value || TEXT_MODELS[0]).trim();
+      const ttm = $("#f-tts-model");
+      if (ttm) settings.ttsModel = ttm.value.trim() || TTS_MODELS[0];
+      const tts = $("#f-tts-style");
+      if (tts) settings.ttsStyle = tts.value;
+      saveSettings(); renderSettings(); renderVideoSettings();
+      $("#f-apikey").value = v;
+      toast("Kunci disimpan di HP ini");
+    });
+    $("#btn-key-del").addEventListener("click", () => {
+      if (!confirm("Hapus kunci API dari HP ini?")) return;
+      settings.apiKey = "";
+      saveSettings();
+      $("#f-apikey").value = "";
+      renderSettings();
+      toast("Kunci dihapus");
+    });
+    $("#btn-key-toggle").addEventListener("click", () => {
+      const inp = $("#f-apikey");
+      inp.type = inp.type === "password" ? "text" : "password";
+      $("#btn-key-toggle").textContent = inp.type === "password" ? "Lihat" : "Sembunyi";
+    });
+    $("#f-model").addEventListener("change", () => {
+      settings.model = $("#f-model").value.trim() || TEXT_MODELS[0];
+      saveSettings();
+    });
+    const ftm = $("#f-tts-model");
+    if (ftm) ftm.addEventListener("change", () => {
+      settings.ttsModel = ftm.value.trim() || TTS_MODELS[0];
+      saveSettings();
+    });
+    const fts = $("#f-tts-style");
+    if (fts) fts.addEventListener("input", () => {
+      settings.ttsStyle = fts.value;
+      saveSettings();
+      const vs = $("#v-tts-style"); if (vs && document.activeElement !== vs) vs.value = settings.ttsStyle;
+    });
+    const bws = $("#btn-ws-save");
+    if (bws) bws.addEventListener("click", () => {
+      const v = ($("#f-wavespeed").value || "").trim();
+      if (!v) { toast("Tempel kunci WaveSpeed-nya dulu, atau biarkan kosong"); return; }
+      settings.waveSpeedKey = v;
+      saveSettings(); renderSettings();
+      toast("Kunci WaveSpeed disimpan di HP ini (belum dipakai merakit)");
+    });
+    const bwd = $("#btn-ws-del");
+    if (bwd) bwd.addEventListener("click", () => {
+      settings.waveSpeedKey = "";
+      saveSettings();
+      const inp = $("#f-wavespeed"); if (inp) inp.value = "";
+      renderSettings();
+      toast("Kunci WaveSpeed dihapus");
+    });
+
+    // ratio also updates preview aspect
+    $("#f-ratio").addEventListener("click", () => renderMode());
+  }
+
+  window.__studio = {
+    get state() { return state; },
+    setMode, renderMovie, frameOf, settings, renderScenes, save,
+    generateSceneImage, imagePrompt, lookOf, qualityTail,
+    attachVoice(sid, dataUrl, source) {
+      const s = state.scenes.find(x => x.id === sid);
+      if (!s) return false;
+      s.voiceData = dataUrl;
+      s.voiceSource = source || "upload";
+      return true;
+    },
+    getLastBlob() { return lastRender.blob; },
+    pickRecorderMime,
+  };
+
   /* ---------- boot ---------- */
   load();
+  if (typeof normalizeProject === "function") normalizeProject(state);
   renderAll();
   bind();
+  bindFeatures();
 
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch(err => console.warn("sw", err));

@@ -1,4 +1,4 @@
-const CACHE = "prompt-studio-v2";
+const CACHE = "prompt-studio-v4";
 const ASSETS = [
   "./",
   "./index.html",
@@ -10,7 +10,6 @@ const ASSETS = [
   "./photos/mahapatih.webp",
   "./photos/ratu.webp",
   "./photos/prajurit.webp",
-
 ];
 
 self.addEventListener("install", (event) => {

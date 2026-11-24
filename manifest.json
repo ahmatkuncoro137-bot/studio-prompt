@@ -1,0 +1,16 @@
+{
+  "name": "Studio Prompt",
+  "short_name": "Studio Prompt",
+  "description": "Bikin prompt gambar dan video per adegan, biar hasilnya kelihatan nyata.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0c0a07",
+  "theme_color": "#0c0a07",
+  "lang": "id",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

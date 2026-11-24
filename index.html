@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0c0a07">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Studio Prompt">
+  <meta name="description" content="Bikin prompt gambar dan video per adegan, biar hasilnya kelihatan nyata.">
+  <title>Studio Prompt</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <style>
+:root {
+  --bg: #0c0a07;
+  --bg-2: #13100b;
+  --card: #1a1510;
+  --card-2: #221c14;
+  --gold: #d4af37;
+  --gold-2: #f3dd9b;
+  --gold-3: #8a6d1f;
+  --line: rgba(212,175,55,.32);
+  --line-dim: rgba(212,175,55,.14);
+  --text: #f4ead3;
+  --muted: #b6a48a;
+  --faint: #7d6e5a;
+  --danger: #d17362;
+  --ok: #9dcc86;
+  --shadow: 0 10px 30px rgba(0,0,0,.45);
+  --serif: "Palatino Linotype", Palatino, "Book Antiqua", "Iowan Old Style", Georgia, serif;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --pad: 16px;
+  --radius: 16px;
+  --top: 58px;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+html { scroll-behavior: auto; }
+body {
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.5;
+  min-height: 100dvh;
+  background:
+    radial-gradient(ellipse at top, rgba(212,175,55,.07), transparent 55%),
+    var(--bg);
+  padding-bottom: calc(28px + env(safe-area-inset-bottom));
+}
+body::before {
+  content: "";
+  position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .35;
+  background-image:
+    radial-gradient(circle at 25% 25%, rgba(212,175,55,.07) 0 11%, transparent 12%),
+    radial-gradient(circle at 75% 75%, rgba(212,175,55,.07) 0 11%, transparent 12%);
+  background-size: 36px 36px;
+}
+.wrap { position: relative; z-index: 1; max-width: 640px; margin: 0 auto; }
+
+/* header */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  background: rgba(12,10,7,.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line-dim);
+  padding: calc(8px + env(safe-area-inset-top)) var(--pad) 6px;
+}
+.topbar-row { display: flex; align-items: center; gap: 10px; }
+.brand-mark {
+  width: 36px; height: 36px; border-radius: 10px;
+  border: 1px solid var(--gold);
+  background: #140f0a url("icons/icon-192.png") center/cover no-repeat;
+  flex: 0 0 auto;
+}
+.brand h1 {
+  font-family: var(--serif); font-weight: 700; font-size: 20px;
+  margin: 0; letter-spacing: .04em; color: var(--gold-2);
+}
+.brand p { margin: 0; font-size: 11px; color: var(--muted); letter-spacing: .02em; }
+.top-actions { margin-left: auto; display: flex; gap: 6px; }
+.ornament {
+  height: 7px; margin: 2px var(--pad) 0;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity: .45; clip-path: polygon(0 50%, 8% 0, 92% 0, 100% 50%, 92% 100%, 8% 100%);
+}
+
+/* nav chips */
+.nav {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+  padding: 8px var(--pad) 6px;
+}
+.nav a {
+  text-decoration: none; color: var(--gold-2); text-align: center;
+  border: 1px solid var(--line); background: var(--card);
+  border-radius: 999px; padding: 8px 2px; font-size: 12px; font-weight: 600;
+}
+.nav a:active { background: var(--card-2); }
+
+/* sections */
+section { padding: 22px var(--pad) 8px; scroll-margin-top: 132px; }
+.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.sec-head h2 {
+  font-family: var(--serif); font-size: 22px; margin: 0; color: var(--gold-2);
+  font-weight: 700;
+}
+.sec-head h2 span { display: block; font-family: var(--sans); font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 2px; letter-spacing: 0; }
+.hint { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+
+/* cards */
+.card {
+  background: linear-gradient(180deg, var(--card-2), var(--card));
+  border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px; margin-bottom: 12px; box-shadow: var(--shadow);
+}
+.card.scene { padding: 0; overflow: hidden; }
+.scene-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 14px; border-bottom: 1px solid var(--line-dim);
+  background: rgba(212,175,55,.06);
+}
+.scene-num {
+  font-family: var(--serif); color: var(--bg); background: var(--gold);
+  width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  font-weight: 700; font-size: 14px; flex: 0 0 auto;
+}
+.scene-head h3 { margin: 0; font-size: 16px; font-family: var(--serif); color: var(--gold-2); flex: 1; }
+.scene-body { padding: 12px 14px 14px; }
+.scene-actions { display: flex; gap: 4px; }
+
+/* forms */
+[hidden] { display: none !important; }
+label.fld { display: block; margin: 0 0 12px; }
+label.fld > span, .lbl {
+  display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--gold); font-weight: 700; margin-bottom: 6px;
+}
+input[type=text], input[type=number], textarea, select {
+  width: 100%; background: #0e0c09; color: var(--text);
+  border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px 12px; font-size: 16px; font-family: inherit;
+  outline: none; appearance: none;
+}
+textarea { min-height: 78px; resize: vertical; line-height: 1.45; }
+input:focus, textarea:focus, select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(212,175,55,.15); }
+select {
+  background-image: linear-gradient(45deg, transparent 50%, var(--gold) 50%), linear-gradient(135deg, var(--gold) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%;
+  background-size: 6px 6px, 6px 6px; background-repeat: no-repeat;
+  padding-right: 32px;
+}
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+/* buttons */
+button, .btn {
+  font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--card-2);
+  color: var(--gold-2); padding: 10px 14px;
+}
+button:active, .btn:active { transform: translateY(1px); }
+button.primary, .btn.primary { background: var(--gold); color: #1a1408; border-color: var(--gold); }
+button.ghost { background: transparent; }
+button.danger, .btn.danger { color: var(--danger); border-color: rgba(209,115,98,.45); }
+button.small, .btn.small { padding: 6px 10px; font-size: 12px; }
+button.icon, .btn.icon { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.full { width: 100%; }
+
+/* ratio chips */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  border: 1px solid var(--line); background: #120e0a; color: var(--text);
+  border-radius: 12px; padding: 10px 12px; font-size: 13px; font-weight: 600;
+  text-align: left; min-height: 44px;
+}
+.chip small { display: block; color: var(--muted); font-weight: 500; font-size: 11px; }
+.chip.on { background: rgba(212,175,55,.16); border-color: var(--gold); color: var(--gold-2); }
+
+/* style radio */
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.seg button { border-radius: 12px; padding: 12px 10px; text-align: center; }
+.seg button.on { background: var(--gold); color: #1a1408; border-color: var(--gold); }
+.seg button small { display: block; font-weight: 500; opacity: .8; font-size: 11px; }
+
+/* character chips in scenes */
+.cast-picks { display: flex; flex-wrap: wrap; gap: 6px; }
+.cast-picks button {
+  border-radius: 999px; padding: 7px 12px; font-size: 13px; font-weight: 600;
+}
+.cast-picks button.on { background: var(--gold); color: #1a1408; border-color: var(--gold); }
+
+/* prompt boxes */
+.pbox { background: #0a0907; border: 1px solid var(--line-dim); border-radius: 12px; margin: 10px 0 0; overflow: hidden; }
+.pbox header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px; border-bottom: 1px solid var(--line-dim);
+  background: rgba(212,175,55,.06);
+}
+.pbox header .tag { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--gold); font-weight: 800; }
+.pbox pre {
+  margin: 0; padding: 10px 12px; white-space: pre-wrap; word-break: break-word;
+  font-family: var(--sans); font-size: 13.5px; line-height: 1.55; color: #efe3c8;
+  max-height: 260px; overflow: auto;
+}
+.pbox.struct pre { font-size: 13px; color: #e4d6b8; }
+.pbox.neg pre { color: #cbb9a0; }
+
+/* captions */
+.tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.tabs button { flex: 1; border-radius: 12px; padding: 10px 6px; font-size: 13px; }
+.tabs button.on { background: var(--gold); color: #1a1408; border-color: var(--gold); }
+.cap-block { margin-bottom: 10px; }
+.cap-block h4 { margin: 0 0 6px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--gold); }
+.hash { color: var(--gold-2); }
+
+/* pemeran grid */
+.cast-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+.cast-card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+  overflow: hidden; box-shadow: var(--shadow);
+}
+.cast-photo {
+  aspect-ratio: 3/4; background: #100c08; position: relative;
+  display: block; width: 100%; object-fit: cover;
+}
+.cast-photo.ph {
+  display: grid; place-items: center; color: var(--faint); font-size: 13px; text-align: center; padding: 10px;
+  background:
+    linear-gradient(180deg, #1a140e, #0e0b08);
+}
+.cast-badge {
+  position: absolute; top: 8px; left: 8px; background: rgba(12,10,7,.8);
+  color: var(--gold-2); border: 1px solid var(--line); font-size: 10px; letter-spacing: .06em;
+  text-transform: uppercase; padding: 3px 7px; border-radius: 999px; font-weight: 700;
+}
+.cast-meta { padding: 10px 10px 12px; }
+.cast-meta h3 { margin: 0 0 2px; font-family: var(--serif); font-size: 16px; color: var(--gold-2); }
+.cast-meta p { margin: 0 0 8px; font-size: 12px; color: var(--muted); }
+.cast-lock { font-size: 11px; color: var(--faint); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; margin: 0 0 8px; }
+
+/* editor sheet */
+.sheet-bg {
+  position: fixed; inset: 0; background: rgba(0,0,0,.62); z-index: 40;
+  display: none; align-items: flex-end; justify-content: center;
+}
+.sheet-bg.on { display: flex; }
+.sheet {
+  background: var(--bg-2); border: 1px solid var(--line);
+  border-radius: 20px 20px 0 0; width: 100%; max-width: 640px;
+  max-height: 92dvh; overflow: auto; padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
+}
+.sheet h3 { font-family: var(--serif); color: var(--gold-2); margin: 0 0 12px; font-size: 20px; }
+.grab { width: 42px; height: 4px; background: var(--line); border-radius: 4px; margin: 0 auto 12px; }
+
+/* toast */
+.toast {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom));
+  transform: translateX(-50%) translateY(80px); opacity: 0;
+  background: var(--gold); color: #1a1408; font-weight: 800;
+  padding: 10px 16px; border-radius: 999px; z-index: 50; transition: .25s ease;
+  pointer-events: none; box-shadow: var(--shadow);
+}
+.toast.on { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+.ref-wrap { margin: 8px 0 0; }
+.ref-wrap img { width: 100%; border-radius: 12px; border: 1px solid var(--line); display: block; }
+details.ref { margin-top: 4px; }
+details.ref summary { cursor: pointer; color: var(--gold); font-weight: 700; font-size: 14px; padding: 8px 0; }
+
+footer.mini {
+  text-align: center; color: var(--faint); font-size: 12px; padding: 28px 16px 8px;
+}
+.sticky-export {
+  position: sticky; bottom: 0; z-index: 15;
+  padding: 10px var(--pad) calc(10px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, transparent, rgba(12,10,7,.95) 30%);
+  display: flex; gap: 8px;
+}
+hr.gold { border: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--line), transparent); margin: 8px 0 14px; }
+.empty { color: var(--muted); text-align: center; padding: 20px 8px; font-size: 14px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header class="topbar">
+    <div class="topbar-row">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <div class="brand">
+        <h1>Studio Prompt</h1>
+        <p>Prompt per adegan, kelihatan nyata</p>
+      </div>
+      <div class="top-actions">
+        <button type="button" class="small" id="btn-export" title="Unduh semua prompt">Unduh</button>
+      </div>
+    </div>
+    <div class="ornament" aria-hidden="true"></div>
+    <nav class="nav">
+      <a href="#proyek">Proyek</a>
+      <a href="#rasio">Rasio</a>
+      <a href="#adegan">Adegan</a>
+      <a href="#caption">Caption</a>
+      <a href="#pemeran">Pemeran</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="proyek">
+      <div class="sec-head">
+        <h2>Proyek <span>Judul, tema, gaya, durasi</span></h2>
+      </div>
+      <div class="card">
+        <label class="fld"><span>Judul cerita</span>
+          <input type="text" id="f-title" autocomplete="off">
+        </label>
+        <label class="fld"><span>Tema / era</span>
+          <select id="f-era"></select>
+        </label>
+        <label class="fld" id="wrap-era-custom" hidden><span>Era kustom</span>
+          <input type="text" id="f-era-custom" placeholder="Tulis era / setting-nya">
+        </label>
+        <div class="lbl">Gaya</div>
+        <div class="seg" id="f-style"></div>
+        <div class="row" style="margin-top:14px">
+          <label class="fld"><span>Jumlah adegan</span>
+            <input type="number" id="f-count" min="1" max="20" step="1">
+          </label>
+          <label class="fld"><span>Durasi / adegan (detik)</span>
+            <input type="number" id="f-duration" min="2" max="30" step="1">
+          </label>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="small" id="btn-load-example">Muat contoh Majapahit</button>
+          <button type="button" class="small ghost" id="btn-reset">Proyek baru</button>
+        </div>
+        <details class="ref">
+          <summary>Contoh gaya referensi (POV zaman kerajaan)</summary>
+          <div class="ref-wrap">
+            <p style="opacity:.8">Gaya: POV orang pertama zaman kerajaan, tangan kelihatan di depan kamera, kabut, obor, candi, ribuan prajurit.</p>
+            <p class="hint" style="margin-top:8px">Ini contoh gaya aja, bukan foto kamu. Prompt di bawah disusun biar hasilnya sedekat ini: tangan di foreground, kamera lebar, cahaya alami, tekstur kulit kelihatan.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section id="rasio">
+      <div class="sec-head">
+        <h2>Rasio <span>Masuk ke prompt, misalnya vertical 9:16</span></h2>
+      </div>
+      <div class="chips" id="f-ratio"></div>
+    </section>
+
+    <section id="adegan">
+      <div class="sec-head">
+        <h2>Adegan <span>Isi jelas, prompt Inggrisnya langsung tempel</span></h2>
+      </div>
+      <p class="hint">Tempeltin <b style="color:var(--gold-2)">Prompt gambar</b> ke Gemini atau Meta AI. Setelah gambar jadi, animasiin pakai <b style="color:var(--gold-2)">Prompt video</b> lalu gabung di CapCut.</p>
+      <div id="scene-list"></div>
+      <div class="btn-row">
+        <button type="button" class="primary full" id="btn-add-scene" data-testid="add-scene">+ Tambah adegan</button>
+        <button type="button" class="full" id="btn-copy-all" data-testid="copy-all">Salin semua prompt</button>
+      </div>
+    </section>
+
+    <section id="caption">
+      <div class="sec-head">
+        <h2>Caption &amp; hashtag <span>Template per platform, bukan jaminan viral</span></h2>
+      </div>
+      <div class="tabs" id="cap-tabs"></div>
+      <div class="card" id="cap-body"></div>
+    </section>
+
+    <section id="pemeran">
+      <div class="sec-head">
+        <h2>Pemeran <span>Foto + kunci karakter, biar wajahnya konsisten</span></h2>
+      </div>
+      <p class="hint">Kunci karakter (bahasa Inggris) ikut kepakai di setiap adegan orangnya muncul. Foto contoh bisa diganti: ambil dari kamera atau galeri — disimpan di HP kamu aja.</p>
+      <div class="cast-grid" id="cast-grid"></div>
+      <div class="btn-row" style="margin-top:12px">
+        <button type="button" class="primary full" id="btn-add-cast" data-testid="add-cast">+ Tambah pemeran</button>
+      </div>
+    </section>
+  </main>
+
+  <div style="padding: 8px 16px 20px">
+    <button type="button" class="primary full" id="btn-export-2">Unduh semua .txt</button>
+    <footer class="mini">Studio Prompt · offline · data tersimpan di HP ini</footer>
+  </div>
+</div>
+
+<div class="sheet-bg" id="sheet-bg">
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"></div>
+</div>
+<div class="toast" id="toast">Tersalin</div>
+
+<script>
+(() => {
+  const KEY = "prompt-studio-v1";
+  const $ = (s, r=document) => r.querySelector(s);
+  const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+
+  const ERAS = [
+    { id: "majapahit", label: "Majapahit",
+      en: "ancient Javanese Majapahit kingdom, 14th century East Java, red-brick Trowulan architecture, red-and-white horizontally striped royal banners (gula kelapa flags, NOT red-and-yellow flags)" },
+    { id: "singasari", label: "Singasari",
+      en: "ancient Javanese Singhasari kingdom, 13th century East Java, stone candi temples, Javanese royal court" },
+    { id: "mataram", label: "Mataram",
+      en: "Javanese Mataram Sultanate era, teak pendopo pavilions, batik, blangkon, keris, Yogyakarta-Surakarta court culture" },
+    { id: "belanda", label: "Penjajahan Belanda",
+      en: "Dutch colonial era in Java, 19th century, kebaya and batik beside VOC-era uniforms, colonial towns and rice fields" },
+    { id: "jepang", label: "Jepang 1942",
+      en: "Japanese occupation of Java, 1942, wartime 1940s Indonesia, period-accurate clothing and atmosphere" },
+    { id: "modern", label: "Modern",
+      en: "contemporary Indonesia, present day, naturalistic modern setting" },
+    { id: "custom", label: "Kustom…", en: "" },
+  ];
+
+  const RATIOS = [
+    { id: "tiktok", label: "TikTok / Reels / Shorts", ar: "9:16", text: "vertical 9:16", plat: "tiktok" },
+    { id: "youtube", label: "YouTube", ar: "16:9", text: "widescreen 16:9", plat: "youtube" },
+    { id: "ig45", label: "Instagram Feed", ar: "4:5", text: "portrait 4:5", plat: "ig" },
+    { id: "ig11", label: "Instagram 1:1", ar: "1:1", text: "square 1:1", plat: "ig" },
+    { id: "fb11", label: "Facebook Post 1:1", ar: "1:1", text: "square 1:1", plat: "fb" },
+    { id: "fb45", label: "Facebook Post 4:5", ar: "4:5", text: "portrait 4:5", plat: "fb" },
+    { id: "fbvid", label: "Facebook Video", ar: "16:9", text: "widescreen 16:9", plat: "fb" },
+  ];
+
+  const CAMERAS = [
+    { id: "pov-hands", label: "POV tangan", en: "first-person POV shot, the viewer's own hands visible in the foreground" },
+    { id: "wide", label: "Wide / lebar", en: "cinematic wide shot" },
+    { id: "medium", label: "Medium shot", en: "cinematic medium shot" },
+    { id: "closeup", label: "Close-up", en: "cinematic close-up" },
+    { id: "drone", label: "Drone / udara", en: "aerial drone shot, high angle" },
+    { id: "low", label: "Low angle", en: "low-angle cinematic shot, heroic framing" },
+    { id: "ots", label: "Over the shoulder", en: "over-the-shoulder shot" },
+    { id: "follow", label: "Tracking dari belakang", en: "tracking shot from behind, following the subject" },
+  ];
+
+  const LENSES = ["16mm", "24mm", "35mm", "50mm", "85mm"];
+
+  const MOVEMENTS = [
+    { id: "push-in", label: "Slow push-in", en: "slow push-in" },
+    { id: "handheld", label: "Handheld goyang halus", en: "subtle handheld camera shake" },
+    { id: "static", label: "Statis", en: "static locked-off camera" },
+    { id: "pan", label: "Slow pan", en: "slow cinematic pan" },
+    { id: "dolly-out", label: "Dolly out", en: "slow dolly out" },
+    { id: "tilt", label: "Tilt up", en: "slow tilt up revealing the scene" },
+    { id: "walk", label: "Jalan mengikuti", en: "walking handheld follow, natural body motion" },
+  ];
+
+  const TIMES = [
+    { id: "fajar", label: "Fajar", en: "dawn, early morning golden hour sunrise" },
+    { id: "pagi-kabut", label: "Pagi berkabut", en: "cool blue morning, thick soft fog" },
+    { id: "siang", label: "Siang", en: "bright daytime" },
+    { id: "senja", label: "Senja", en: "sunset golden hour, warm low sunlight" },
+    { id: "malam", label: "Malam", en: "night time" },
+    { id: "malam-hujan", label: "Malam hujan", en: "night time in heavy rain, wet ground, visible rain droplets" },
+    { id: "badai", label: "Langit badai", en: "dark stormy sky, dramatic heavy clouds" },
+  ];
+
+  const ROLES = ["POV / aku", "Raja", "Ratu", "Mahapatih", "Patih", "Prajurit", "Rakyat", "Tokoh lain"];
+
+  const uid = (p) => p + Math.random().toString(36).slice(2, 9);
+
+  function eraFlavor(state) {
+    if (state.era === "custom") return (state.eraCustom || "custom historical setting").trim();
+    return (ERAS.find(e => e.id === state.era) || ERAS[0]).en;
+  }
+
+  function autoLock(c) {
+    const bits = [];
+    if (c.name) bits.push(c.name);
+    if (c.role) bits.push(c.role);
+    if (c.age) bits.push(`about ${c.age} years old`);
+    if (c.face) bits.push(c.face);
+    if (c.body) bits.push(c.body);
+    if (c.clothing) bits.push(`wearing ${c.clothing}`);
+    bits.push("consistent character appearance throughout every shot");
+    return bits.join(", ");
+  }
+
+  function lockOf(c) {
+    return (c.lock && c.lock.trim()) || autoLock(c);
+  }
+
+  const MAJAPAHIT_CAST = () => [
+    {
+      id: "c-aku",
+      name: "Aku (POV)",
+      role: "POV / aku",
+      age: "22",
+      face: "young Javanese man, warm brown sun-tanned skin, in POV shots mainly the hands and forearms are seen",
+      body: "strong working soldier's hands and forearms, visible knuckles, light battle dust, a simple gold ring on the ring finger",
+      clothing: "Majapahit soldier kit: dark woven blangkon when the body is seen, brown leather armor, olive cloth scarf, rattan shield and spear",
+      lock: "first-person POV of a young Javanese Majapahit soldier; the viewer's own sun-tanned warm-brown hands and forearms with natural skin texture, visible knuckles and light battle dust, a simple gold ring on the ring finger, no watch, no modern jewelry",
+      photo: "photos/prajurit.webp",
+      lockManual: true,
+    },
+    {
+      id: "c-raja",
+      name: "Hayam Wuruk",
+      role: "Raja",
+      age: "28",
+      face: "handsome young Javanese king, warm brown skin, dark almond eyes, straight black hair tied in a high bun, calm dignified expression",
+      body: "lean royal build, bare upper torso with jewelry, upright court posture",
+      clothing: "authentic gold kiritamakuta crown (truncated-cone Javanese royal crown with a richly carved jamang forehead band; NOT a tall pointed Thai or Khmer crown), layered gold necklaces, gold kelat bahu armbands, a thin white upawita sacred cord across the chest, a wide gold waist belt, a wavy pamor-steel keris at the left hip, brown-and-gold batik kain",
+      lock: "Hayam Wuruk, King of Majapahit, a handsome young Javanese man about 28, warm brown skin, dark almond eyes, straight black hair in a high bun, wearing an authentic gold kiritamakuta crown (a truncated-cone Javanese royal crown with a richly carved jamang forehead band; NOT a tall pointed Thai or Khmer crown), layered gold necklaces on a bare chest, gold kelat bahu armbands, a thin white upawita sacred cord across the torso, a wide gold waist belt, a wavy pamor-steel keris tucked at the left hip, a brown-and-gold batik kain, calm dignified expression, historically Javanese royal iconography from Trowulan",
+      photo: "photos/raja.webp",
+      lockManual: true,
+    },
+    {
+      id: "c-patih",
+      name: "Gajah Mada",
+      role: "Mahapatih",
+      age: "44",
+      face: "stern Javanese commander, weathered warm brown skin, short mustache, intense dark eyes",
+      body: "solid military build, commanding posture",
+      clothing: "dark brown destar / blangkon headcloth (no crown), carved brown leather cuirass with Javanese floral relief, a long wavy keris in hand",
+      lock: "Gajah Mada, Mahapatih of Majapahit, a stern Javanese man in his 40s, weathered warm brown skin, short mustache, intense dark eyes, black hair under a dark brown destar / blangkon headcloth (no crown), a carved brown leather cuirass with Javanese floral relief, a long wavy keris in his hand, commanding military posture",
+      photo: "photos/mahapatih.webp",
+      lockManual: true,
+    },
+    {
+      id: "c-ratu",
+      name: "Sang Ratu",
+      role: "Ratu",
+      age: "26",
+      face: "graceful Javanese queen, warm brown skin, dark hair in a high sanggul bun, elegant calm face",
+      body: "slender upright royal posture",
+      clothing: "gold jamang and kiritamakuta-style Javanese regal headdress (not a pointed Thai crown), layered gold necklaces, gold kelat bahu, brown-and-cream batik kain and kemben",
+      lock: "a Javanese queen of Majapahit, a graceful woman about 26, warm brown skin, dark hair in a high sanggul bun, a gold jamang and kiritamakuta-style regal headdress (Javanese, not a pointed Thai crown), layered gold necklaces, gold kelat bahu, a brown-and-cream batik kain and kemben, elegant upright posture",
+      photo: "photos/ratu.webp",
+      lockManual: true,
+    },
+    {
+      id: "c-pasukan",
+      name: "Pasukan Majapahit",
+      role: "Prajurit",
+      age: "20-35",
+      face: "Javanese men with warm brown skin, serious faces, light mud and dust",
+      body: "soldier builds, standing in formation or marching",
+      clothing: "dark woven blangkon headbands, brown leather armor, olive cloth scarves, long wooden spears, round woven rattan shields",
+      lock: "Majapahit soldiers, Javanese men with warm brown skin, wearing dark woven blangkon headbands, brown leather armor, olive cloth scarves, holding long wooden spears and round woven rattan shields, serious faces, light mud and dust",
+      photo: "photos/prajurit.webp",
+      lockManual: true,
+    },
+  ];
+
+  function exampleProject() {
+    const characters = MAJAPAHIT_CAST();
+    const scenes = [
+      {
+        id: "s1", title: "Di atas gajah perang",
+        characterIds: ["c-aku", "c-pasukan"],
+        action: "standing on a golden carved howdah on a decorated war elephant, both hands resting on the ornate golden wooden rail, looking out over thousands of soldiers",
+        location: "golden carved elephant howdah, overlooking tall Prambanan-style stone candi temples and a vast army on the plain below",
+        time: "fajar", mood: "majestic, epic, breath held before war",
+        camera: "pov-hands", lens: "24mm", movement: "push-in",
+        lighting: "golden hour sunrise backlight, light mist and dust in the air",
+      },
+      {
+        id: "s2", title: "Keris di howdah",
+        characterIds: ["c-aku", "c-pasukan"],
+        action: "one hand gripping the golden hilt of an ornate wavy Javanese keris, the other on the howdah rail, looking toward the temples",
+        location: "golden elephant howdah, Prambanan-style stone temples and ranks of soldiers in the valley below",
+        time: "fajar", mood: "tense pride, quiet power",
+        camera: "pov-hands", lens: "24mm", movement: "handheld",
+        lighting: "soft dawn light, morning haze, rim light on the gold rail",
+      },
+      {
+        id: "s3", title: "Berbaris dengan tombak",
+        characterIds: ["c-aku", "c-pasukan"],
+        action: "right hand tightly gripping a carved golden spear shaft, marching forward with the army, red-and-white banners ahead",
+        location: "dirt war path, ranks of Majapahit soldiers in leather armor marching toward a volcano",
+        time: "badai", mood: "fierce, relentless, war coming",
+        camera: "pov-hands", lens: "24mm", movement: "walk",
+        lighting: "dark stormy red sky, volcanic ash and dust, dramatic storm light",
+      },
+      {
+        id: "s4", title: "Formasi di kabut pagi",
+        characterIds: ["c-aku", "c-pasukan"],
+        action: "standing still in a tight infantry line, a long spear held vertical in the right hand, a round rattan shield at the left, fellow soldiers in blangkon visible close on both sides",
+        location: "wet grassy field in thick morning fog, faint torches glowing far ahead",
+        time: "pagi-kabut", mood: "quiet, cold, brotherhood, waiting",
+        camera: "medium", lens: "35mm", movement: "static",
+        lighting: "cool blue fog, soft overcast, low contrast, moisture in the air",
+      },
+      {
+        id: "s5", title: "Pawai obor di hujan",
+        characterIds: ["c-aku", "c-pasukan"],
+        action: "walking behind fellow soldiers who carry burning torches, rain falling hard, mud splashing under bare feet and sandals, approaching a temple gate",
+        location: "muddy path toward a carved stone and red-brick candi gate, night rain",
+        time: "malam-hujan", mood: "grim, loyal, fire against the rain",
+        camera: "follow", lens: "24mm", movement: "walk",
+        lighting: "warm torchlight on wet skin and armor, cold rain, smoke and steam",
+      },
+      {
+        id: "s6", title: "Keris di atas benteng",
+        characterIds: ["c-aku", "c-pasukan"],
+        action: "riding a horse along a high fortress wall, both hands raised, holding a wavy pamor keris toward the valley, gold rings on the fingers, looking down at the battlefield",
+        location: "stone fortress battlement, a wide valley battlefield with smoke and tiny ranks of soldiers below",
+        time: "senja", mood: "heroic, lonely command, the war below",
+        camera: "pov-hands", lens: "24mm", movement: "handheld",
+        lighting: "late-afternoon golden light, smoke in the valley, rim light on the keris blade",
+      },
+      {
+        id: "s7", title: "Tameng rotan, panah berapi",
+        characterIds: ["c-aku"],
+        action: "both hands gripping the top edge of a woven rattan shield held close, a wavy keris also in the right hand, flaming arrows raining down just beyond the shield",
+        location: "behind a close-up woven rattan shield, night battlefield, sparks and fire in the sky",
+        time: "malam", mood: "danger, survival, fire and breath",
+        camera: "pov-hands", lens: "24mm", movement: "handheld",
+        lighting: "firelight from burning arrows, sparks, deep night shadows, heat glow on the hands",
+      },
+      {
+        id: "s8", title: "Raja meninjau pasukan di Bajang Ratu",
+        characterIds: ["c-aku", "c-raja", "c-patih", "c-pasukan"],
+        action: "standing in the ranks looking toward the king as he reviews the army, spear at rest, thousands of soldiers in formation",
+        location: "in front of the red-brick Bajang Ratu paduraksa gate at Trowulan, a wide dusty court, red-and-white gula kelapa banners",
+        time: "senja", mood: "solemn, loyal, royal grandeur",
+        camera: "wide", lens: "35mm", movement: "push-in",
+        lighting: "late afternoon gold light on red brick, dust motes, long shadows",
+      },
+    ];
+    return {
+      title: "POV: Aku Prajurit Majapahit",
+      era: "majapahit",
+      eraCustom: "",
+      style: "pov",
+      duration: 5,
+      ratio: "tiktok",
+      characters,
+      scenes,
+    };
+  }
+
+  function blankCharacter() {
+    return {
+      id: uid("c-"), name: "Tokoh baru", role: "Tokoh lain", age: "",
+      face: "", body: "", clothing: "", lock: "", photo: "", lockManual: false,
+    };
+  }
+
+  function blankScene(i) {
+    return {
+      id: uid("s-"), title: "Adegan " + i,
+      characterIds: [], action: "", location: "",
+      time: "senja", mood: "", camera: "pov-hands", lens: "24mm",
+      movement: "push-in", lighting: "",
+    };
+  }
+
+  function blankProject() {
+    return {
+      title: "", era: "majapahit", eraCustom: "", style: "pov",
+      duration: 5, ratio: "tiktok",
+      characters: [], scenes: [blankScene(1)],
+    };
+  }
+
+  let state = exampleProject();
+  let capTab = "tiktok";
+  let editingId = null;
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data && data.scenes && data.characters) state = data;
+    } catch (e) { console.warn("load skip", e); }
+  }
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); }
+    catch (e) { toast("Gagal menyimpan (storage penuh?)"); console.warn(e); }
+  }
+
+  function ratio() { return RATIOS.find(r => r.id === state.ratio) || RATIOS[0]; }
+  function timeOf(id) { return TIMES.find(t => t.id === id) || TIMES[0]; }
+  function camOf(id) { return CAMERAS.find(c => c.id === id) || CAMERAS[0]; }
+  function movOf(id) { return MOVEMENTS.find(m => m.id === id) || MOVEMENTS[0]; }
+  function charById(id) { return state.characters.find(c => c.id === id); }
+
+  function realism(scene) {
+    const r = ratio();
+    const lens = scene.lens || "35mm";
+    return `hyper-realistic, photorealistic, shot on Sony A7S III, ${lens} lens, cinematic lighting, natural skin texture, film grain, 8K, ${r.text}, --ar ${r.ar}`;
+  }
+
+  function negativePrompt() {
+    const bits = [
+      "no cartoon, no anime, no 3D render, no CGI look, no illustration, no painting, no plastic skin",
+      "no text, no watermark, no logo, no subtitles, no captions, no title card",
+      "no extra fingers, no extra limbs, no deformed hands, no fused fingers",
+    ];
+    if (state.era === "majapahit" || state.era === "singasari" || state.era === "mataram") {
+      bits.push("no Thai crown, no pointed Siamese or Khmer crown, no red-and-yellow flags, no Thai temple, no modern clothing, no sneakers, no wristwatch, no sunglasses, no neon");
+    } else if (state.era === "belanda" || state.era === "jepang") {
+      bits.push("no modern smartphones, no LED lights, no sneakers, no contemporary logos");
+    }
+    return bits.join(", ");
+  }
+
+  function imagePrompt(scene) {
+    const parts = [];
+    const cam = camOf(scene.camera);
+    const isPov = state.style === "pov" || scene.camera === "pov-hands";
+    const chars = (scene.characterIds || []).map(charById).filter(Boolean);
+    const pov = chars.find(c => /pov|aku/i.test(c.role + " " + c.name));
+    const others = chars.filter(c => c !== pov);
+
+    if (isPov && pov) {
+      const lock = lockOf(pov);
+      if (!/first-person|viewer's own/i.test(lock)) parts.push(cam.en);
+      parts.push(lock);
+    } else if (isPov) {
+      parts.push(cam.en);
+    } else {
+      parts.push(cam.en);
+      for (const c of chars) parts.push(lockOf(c) + " visible in the scene");
+    }
+
+    if (scene.action) parts.push(scene.action);
+    if (isPov) {
+      for (const c of others) parts.push(lockOf(c) + " visible in the scene");
+    }
+    if (scene.location) parts.push(scene.location);
+    parts.push(eraFlavor(state));
+    parts.push(timeOf(scene.time).en);
+    if (scene.lighting) parts.push(scene.lighting);
+    if (scene.mood) parts.push(scene.mood + " atmosphere");
+    parts.push(realism(scene));
+    return parts.filter(Boolean).join(", ");
+  }
+
+  function videoPrompt(scene) {
+    const mov = movOf(scene.movement);
+    const extras = [];
+    const t = scene.time;
+    if (t === "malam-hujan") extras.push("rain falling, torches flickering, wet reflections");
+    else if (t === "pagi-kabut") extras.push("slow drift of fog");
+    else if (t === "fajar" || t === "senja") extras.push("banners waving in the wind, warm light shifting");
+    else if (t === "badai") extras.push("dust and cloth whipping in the wind, ominous sky");
+    else if (t === "malam") extras.push("firelight flicker, sparks");
+    const loc = (scene.location || "").toLowerCase();
+    if (loc.includes("banner") || loc.includes("gula")) extras.push("red-and-white banners waving");
+    if (loc.includes("elephant") || loc.includes("gajah") || loc.includes("howdah")) extras.push("elephant breathing, howdah slightly swaying");
+    if ((scene.action || "").toLowerCase().includes("march") || (scene.action || "").includes("berbaris")) extras.push("soldiers marching");
+    const dur = Number(state.duration) || 5;
+    return [mov.en, ...unique(extras), `${dur} seconds`, "cinematic, realistic motion, no text"].join(", ");
+  }
+
+  function unique(arr) { return [...new Set(arr.filter(Boolean))]; }
+
+  function structuredBlock(scene, i) {
+    const chars = (scene.characterIds || []).map(charById).filter(Boolean);
+    const charLines = chars.length
+      ? chars.map(c => `${c.name} (${c.role}${c.age ? ", " + c.age + " th" : ""}): ${lockOf(c)}`).join("\n")
+      : "(belum pilih pemeran)";
+    return [
+      `Adegan ${i} — ${scene.title || "Tanpa judul"}`,
+      `Karakter:\n${charLines}`,
+      `Aksi: ${scene.action || "-"}`,
+      `Lokasi: ${scene.location || "-"}`,
+      `Waktu: ${timeOf(scene.time).label}`,
+      `Suasana: ${scene.mood || "-"}`,
+      `Kamera: ${camOf(scene.camera).label}, ${scene.lens || "35mm"}`,
+      `Gerak video: ${movOf(scene.movement).label}`,
+      `Cahaya: ${scene.lighting || "-"}`,
+      `Durasi: ${state.duration} detik`,
+      `Rasio: ${ratio().text} (--ar ${ratio().ar})`,
+    ].join("\n");
+  }
+
+  function allText() {
+    const lines = [
+      "STUDIO PROMPT",
+      `Judul: ${state.title}`,
+      `Tema: ${eraLabel()}`,
+      `Gaya: ${state.style === "pov" ? "POV orang pertama" : "Sinematik orang ketiga"}`,
+      `Rasio: ${ratio().label} ${ratio().ar}`,
+      `Durasi per adegan: ${state.duration} detik`,
+      "",
+    ];
+    state.scenes.forEach((s, i) => {
+      lines.push("======== ADEGAN " + (i+1) + " — " + (s.title || "") + " ========");
+      lines.push(structuredBlock(s, i+1));
+      lines.push("", "--- PROMPT GAMBAR ---", imagePrompt(s));
+      lines.push("", "--- PROMPT VIDEO ---", videoPrompt(s));
+      lines.push("", "--- PROMPT NEGATIF ---", negativePrompt(), "");
+    });
+    lines.push("======== PEMERAN ========");
+    state.characters.forEach(c => {
+      lines.push(`${c.name} | ${c.role} | ${c.age || "-"}`);
+      lines.push("Kunci: " + lockOf(c));
+      lines.push("");
+    });
+    ["tiktok","youtube","ig","fb"].forEach(p => {
+      const cap = buildCaption(p);
+      lines.push("======== CAPTION " + cap.platName.toUpperCase() + " ========");
+      lines.push("Judul / hook:", cap.hook, "");
+      lines.push("Deskripsi:", cap.desc, "");
+      lines.push("Hashtag:", cap.tags, "", "");
+    });
+    return lines.join("\n");
+  }
+
+  function eraLabel() {
+    if (state.era === "custom") return state.eraCustom || "Kustom";
+    return (ERAS.find(e => e.id === state.era) || ERAS[0]).label;
+  }
+
+  function themeWords() {
+    const map = {
+      majapahit: { id: "Majapahit", en: "Majapahit", tags: ["#majapahit","#hayamwuruk","#gajahmada","#nusantara","#trowulan","#kerajaan"] },
+      singasari: { id: "Singasari", en: "Singhasari", tags: ["#singasari","#nusantara","#kerajaan","#sejarahindonesia"] },
+      mataram: { id: "Mataram", en: "Mataram", tags: ["#mataram","#yogyakarta","#keraton","#sejarahindonesia"] },
+      belanda: { id: "zaman penjajahan Belanda", en: "the Dutch colonial era", tags: ["#sejarahindonesia","#penjajahan","#nusantara"] },
+      jepang: { id: "Java tahun 1942", en: "Java in 1942", tags: ["#sejarahindonesia","#1942","#nusantara"] },
+      modern: { id: "Indonesia sekarang", en: "present-day Indonesia", tags: ["#indonesia","#cinematic"] },
+      custom: { id: state.eraCustom || "cerita ini", en: state.eraCustom || "this story", tags: ["#sejarah","#cinematic"] },
+    };
+    return map[state.era] || map.custom;
+  }
+
+  function buildCaption(plat) {
+    const tw = themeWords();
+    const title = state.title || ("Cerita " + tw.id);
+    const names = state.characters.map(c => c.name).filter(n => !/pasukan/i.test(n)).slice(0, 4).join(", ");
+    const n = state.scenes.length;
+    const hookPov = state.style === "pov";
+    const hook = hookPov
+      ? (title.startsWith("POV") ? title : "POV: " + title)
+      : title;
+    const sceneTitles = state.scenes.map(s => s.title).filter(Boolean).slice(0, 5).join(" — ");
+    const descId = [
+      hookPov
+        ? `${n} adegan, satu jalan cerita. Aku ada di tengah ${tw.id}.${sceneTitles ? " Alur: " + sceneTitles + "." : ""}`
+        : `${n} adegan tentang ${tw.id}.${sceneTitles ? " Alur: " + sceneTitles + "." : ""}`,
+      names ? `Pemeran: ${names}.` : "",
+      "Ilustrasi artistik, bukan rekaman sejarah asli.",
+    ].filter(Boolean).join("\n");
+    const descEn = hookPov
+      ? `${n}-scene cinematic POV set in ${tw.en}. Artistic reimagining, not a historical recording.`
+      : `${n}-scene cinematic story set in ${tw.en}. Artistic reimagining, not a historical recording.`;
+    const desc = descId + "\n\n" + descEn;
+
+    const base = ["#sejarahindonesia", "#cinematic", "#pov", "#jamankerajaan", tw.tags].flat();
+    let tags, platName;
+    if (plat === "tiktok") {
+      platName = "TikTok";
+      tags = unique(["#fyp","#foryou","#foryoupage", ...base, "#tiktokindonesia","#kontensejarah"]).join(" ");
+    } else if (plat === "youtube") {
+      platName = "YouTube";
+      const ytTags = unique(["#shorts", "#youtube", ...base, "#indonesiahistory", "#cinematicvideo"]);
+      tags = ytTags.join(" ") + "\n\nTags YouTube: " + [title, tw.en, "sejarah Indonesia", "cinematic", "POV", "Majapahit", "Shorts"].join(", ");
+    } else if (plat === "ig") {
+      platName = "Instagram";
+      tags = unique(["#reels","#reelsinstagram","#explore", ...base, "#visualstorytelling","#sejarah"]).join(" ");
+    } else {
+      platName = "Facebook";
+      tags = unique([...base, "#facebookvideo", "#ceritasejarah"]).join(" ");
+    }
+    return { plat, platName, hook, desc, tags };
+  }
+
+  /* ---------- render ---------- */
+  function optionize(list, val, labelKey="label", idKey="id") {
+    return list.map(x => `<option value="${esc(x[idKey])}" ${x[idKey]===val?"selected":""}>${esc(x[labelKey])}</option>`).join("");
+  }
+
+  function esc(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+  }
+
+  function renderProject() {
+    const title = $("#f-title");
+    if (title && document.activeElement !== title) title.value = state.title;
+    const era = $("#f-era");
+    if (era) {
+      if (!era.options.length) era.innerHTML = ERAS.map(e => `<option value="${e.id}">${e.label}</option>`).join("");
+      if (document.activeElement !== era) era.value = state.era;
+    }
+    const wrap = $("#wrap-era-custom");
+    if (wrap) wrap.hidden = state.era !== "custom";
+    const custom = $("#f-era-custom");
+    if (custom && document.activeElement !== custom) custom.value = state.eraCustom || "";
+    const count = $("#f-count");
+    if (count && document.activeElement !== count) count.value = state.scenes.length;
+    const dur = $("#f-duration");
+    if (dur && document.activeElement !== dur) dur.value = state.duration;
+    $("#f-style").innerHTML = [
+      ["pov", "POV orang pertama", "Yang kelihatan: tangan kamu"],
+      ["cinematic", "Sinematik orang ketiga", "Kamera di luar tokoh"],
+    ].map(([id, a, b]) => `<button type="button" data-style="${id}" class="${state.style===id?"on":""}">${a}<small>${b}</small></button>`).join("");
+  }
+
+  function renderRatio() {
+    $("#f-ratio").innerHTML = RATIOS.map(r =>
+      `<button type="button" class="chip ${state.ratio===r.id?"on":""}" data-ratio="${r.id}">${esc(r.label)}<small>${r.ar}</small></button>`
+    ).join("");
+  }
+
+  function renderScenes() {
+    const focus = preserveFocus();
+    $("#scene-list").innerHTML = state.scenes.map((s, i) => sceneCard(s, i)).join("") || `<p class="empty">Belum ada adegan.</p>`;
+    restoreFocus(focus);
+  }
+
+  function sceneCard(s, i) {
+    const n = i + 1;
+    return `<article class="card scene" data-scene="${esc(s.id)}" id="scene-${esc(s.id)}">
+      <div class="scene-head">
+        <div class="scene-num">${n}</div>
+        <h3>${esc(s.title || "Adegan " + n)}</h3>
+        <div class="scene-actions">
+          <button type="button" class="icon small" data-act="up" data-sid="${esc(s.id)}" title="Naik" ${i===0?"disabled":""}>↑</button>
+          <button type="button" class="icon small" data-act="down" data-sid="${esc(s.id)}" title="Turun" ${i===state.scenes.length-1?"disabled":""}>↓</button>
+          <button type="button" class="icon small danger" data-act="del-scene" data-sid="${esc(s.id)}" title="Hapus">✕</button>
+        </div>
+      </div>
+      <div class="scene-body">
+        <label class="fld"><span>Judul adegan</span>
+          <input type="text" data-sf="title" data-sid="${esc(s.id)}" value="${esc(s.title)}" id="t-${esc(s.id)}">
+        </label>
+        <div class="lbl">Karakter yang tampil</div>
+        <div class="cast-picks">
+          ${state.characters.map(c => `<button type="button" data-act="toggle-char" data-sid="${esc(s.id)}" data-cid="${esc(c.id)}" class="${(s.characterIds||[]).includes(c.id)?"on":""}">${esc(c.name)}</button>`).join("") || "<span class='hint'>Tambah pemeran dulu di bawah.</span>"}
+        </div>
+        <label class="fld" style="margin-top:12px"><span>Aksi (jelas, bahasa Inggris boleh)</span>
+          <textarea data-sf="action" data-sid="${esc(s.id)}" id="a-${esc(s.id)}">${esc(s.action)}</textarea>
+        </label>
+        <label class="fld"><span>Lokasi</span>
+          <textarea data-sf="location" data-sid="${esc(s.id)}" id="l-${esc(s.id)}" style="min-height:64px">${esc(s.location)}</textarea>
+        </label>
+        <div class="row">
+          <label class="fld"><span>Waktu</span>
+            <select data-sf="time" data-sid="${esc(s.id)}">${optionize(TIMES, s.time)}</select>
+          </label>
+          <label class="fld"><span>Kamera</span>
+            <select data-sf="camera" data-sid="${esc(s.id)}">${optionize(CAMERAS, s.camera)}</select>
+          </label>
+        </div>
+        <label class="fld"><span>Suasana / mood</span>
+          <input type="text" data-sf="mood" data-sid="${esc(s.id)}" value="${esc(s.mood)}" id="m-${esc(s.id)}">
+        </label>
+        <div class="row-3">
+          <label class="fld"><span>Lensa</span>
+            <select data-sf="lens" data-sid="${esc(s.id)}">${LENSES.map(x=>`<option ${x===s.lens?"selected":""}>${x}</option>`).join("")}</select>
+          </label>
+          <label class="fld" style="grid-column: span 2"><span>Gerak video</span>
+            <select data-sf="movement" data-sid="${esc(s.id)}">${optionize(MOVEMENTS, s.movement)}</select>
+          </label>
+        </div>
+        <label class="fld"><span>Cahaya</span>
+          <input type="text" data-sf="lighting" data-sid="${esc(s.id)}" value="${esc(s.lighting)}" id="h-${esc(s.id)}">
+        </label>
+        <div class="pbox struct" id="box-s-${esc(s.id)}">
+          <header><span class="tag">Blok adegan</span>
+            <button type="button" class="small" data-copy="struct" data-sid="${esc(s.id)}">Salin</button></header>
+          <pre>${esc(structuredBlock(s, n))}</pre>
+        </div>
+        <div class="pbox" id="box-i-${esc(s.id)}">
+          <header><span class="tag">Prompt gambar · tempel ke AI</span>
+            <button type="button" class="small primary" data-copy="image" data-sid="${esc(s.id)}">Salin</button></header>
+          <pre>${esc(imagePrompt(s))}</pre>
+        </div>
+        <div class="pbox" id="box-v-${esc(s.id)}">
+          <header><span class="tag">Prompt video · ${state.duration} detik</span>
+            <button type="button" class="small" data-copy="video" data-sid="${esc(s.id)}">Salin</button></header>
+          <pre>${esc(videoPrompt(s))}</pre>
+        </div>
+        <div class="pbox neg" id="box-n-${esc(s.id)}">
+          <header><span class="tag">Prompt negatif</span>
+            <button type="button" class="small" data-copy="neg" data-sid="${esc(s.id)}">Salin</button></header>
+          <pre>${esc(negativePrompt())}</pre>
+        </div>
+        <div class="btn-row" style="margin-top:10px">
+          <button type="button" class="small" data-copy="scene-all" data-sid="${esc(s.id)}">Salin satu adegan ini</button>
+        </div>
+      </div>
+    </article>`;
+  }
+
+  function refreshScenePrompts(sid) {
+    const s = state.scenes.find(x => x.id === sid);
+    if (!s) return;
+    const i = state.scenes.indexOf(s) + 1;
+    const set = (id, text) => { const el = $(id); if (el) el.textContent = text; };
+    set(`#box-s-${sid} pre`, structuredBlock(s, i));
+    set(`#box-i-${sid} pre`, imagePrompt(s));
+    set(`#box-v-${sid} pre`, videoPrompt(s));
+    set(`#box-n-${sid} pre`, negativePrompt());
+    const h = $(`#scene-${sid} .scene-head h3`);
+    if (h) h.textContent = s.title || ("Adegan " + i);
+  }
+
+  function refreshAllPrompts() {
+    state.scenes.forEach(s => refreshScenePrompts(s.id));
+    renderCaptions();
+  }
+
+  function renderCaptions() {
+    const plats = [
+      ["tiktok","TikTok"],["youtube","YouTube"],["ig","Instagram"],["fb","Facebook"]
+    ];
+    $("#cap-tabs").innerHTML = plats.map(([id,l]) =>
+      `<button type="button" data-captab="${id}" class="${capTab===id?"on":""}">${l}</button>`
+    ).join("");
+    const cap = buildCaption(capTab);
+    $("#cap-body").innerHTML = `
+      <div class="cap-block">
+        <h4>Judul / hook <button type="button" class="small" data-copy="cap-hook">Salin</button></h4>
+        <div class="pbox"><pre id="cap-hook">${esc(cap.hook)}</pre></div>
+      </div>
+      <div class="cap-block">
+        <h4>Deskripsi (Indonesia + Inggris) <button type="button" class="small" data-copy="cap-desc">Salin</button></h4>
+        <div class="pbox"><pre id="cap-desc">${esc(cap.desc)}</pre></div>
+      </div>
+      <div class="cap-block">
+        <h4>Hashtag (template) <button type="button" class="small" data-copy="cap-tags">Salin</button></h4>
+        <div class="pbox"><pre id="cap-tags" class="hash">${esc(cap.tags)}</pre></div>
+      </div>
+      <button type="button" class="full" data-copy="cap-all">Salin caption ${esc(cap.platName)} lengkap</button>
+    `;
+  }
+
+  function photoSrc(c) {
+    if (c.photo) return c.photo;
+    return "";
+  }
+
+  function renderCast() {
+    const focus = preserveFocus();
+    $("#cast-grid").innerHTML = state.characters.map(c => {
+      const src = photoSrc(c);
+      const img = src
+        ? `<img class="cast-photo" src="${esc(src)}" alt="${esc(c.name)}">`
+        : `<div class="cast-photo ph">Belum ada foto<br>ketuk Edit</div>`;
+      return `<article class="cast-card" data-cid="${esc(c.id)}">
+        <div style="position:relative">
+          ${img}
+          <div class="cast-badge">${esc(c.role || "Pemeran")}</div>
+        </div>
+        <div class="cast-meta">
+          <h3>${esc(c.name)}</h3>
+          <p>${esc(c.age ? c.age + " tahun" : "—")}</p>
+          <p class="cast-lock">${esc(lockOf(c))}</p>
+          <div class="btn-row">
+            <button type="button" class="small" data-act="edit-cast" data-cid="${esc(c.id)}">Edit</button>
+            <button type="button" class="small" data-act="photo-cast" data-cid="${esc(c.id)}">Foto</button>
+          </div>
+        </div>
+      </article>`;
+    }).join("") || `<p class="empty" style="grid-column:1/-1">Belum ada pemeran. Tambah dulu ya.</p>`;
+    restoreFocus(focus);
+  }
+
+  function openSheet(html) {
+    $("#sheet").innerHTML = `<div class="grab"></div>` + html;
+    $("#sheet-bg").classList.add("on");
+  }
+  function closeSheet() {
+    $("#sheet-bg").classList.remove("on");
+    editingId = null;
+  }
+
+  function editCast(id) {
+    const c = id ? charById(id) : blankCharacter();
+    if (!id) { state.characters.push(c); save(); }
+    editingId = c.id;
+    openSheet(`
+      <h3 id="sheet-title">${id ? "Edit pemeran" : "Pemeran baru"}</h3>
+      <label class="fld"><span>Nama</span><input type="text" id="e-name" value="${esc(c.name)}"></label>
+      <div class="row">
+        <label class="fld"><span>Peran</span>
+          <select id="e-role">${ROLES.map(r=>`<option ${r===c.role?"selected":""}>${r}</option>`).join("")}</select>
+        </label>
+        <label class="fld"><span>Usia</span><input type="text" id="e-age" value="${esc(c.age)}" placeholder="28"></label>
+      </div>
+      <label class="fld"><span>Wajah / kulit / rambut</span><textarea id="e-face">${esc(c.face)}</textarea></label>
+      <label class="fld"><span>Tubuh</span><textarea id="e-body" style="min-height:60px">${esc(c.body)}</textarea></label>
+      <label class="fld"><span>Pakaian &amp; aksesoris</span><textarea id="e-clothing">${esc(c.clothing)}</textarea></label>
+      <label class="fld"><span>Kunci karakter (bahasa Inggris, dipakai di semua adegan)</span>
+        <textarea id="e-lock" style="min-height:110px">${esc(c.lock || autoLock(c))}</textarea>
+      </label>
+      <p class="hint">Foto pemeran: ${c.photo && !c.photo.startsWith("data:") ? "pakai foto contoh" : (c.photo ? "foto kamu" : "belum ada")}.</p>
+      <div class="btn-row">
+        <button type="button" class="primary" id="e-save">Simpan</button>
+        <button type="button" class="ghost" id="e-photo">Ganti foto</button>
+        <button type="button" class="ghost" id="e-close">Tutup</button>
+        <button type="button" class="danger" id="e-del">Hapus</button>
+      </div>
+    `);
+    $("#e-close").onclick = closeSheet;
+    $("#e-save").onclick = () => {
+      c.name = $("#e-name").value.trim() || "Tanpa nama";
+      c.role = $("#e-role").value;
+      c.age = $("#e-age").value.trim();
+      c.face = $("#e-face").value.trim();
+      c.body = $("#e-body").value.trim();
+      c.clothing = $("#e-clothing").value.trim();
+      const newLock = $("#e-lock").value.trim();
+      c.lock = newLock;
+      c.lockManual = true;
+      save(); closeSheet(); renderCast(); renderScenes(); renderCaptions();
+      toast("Pemeran disimpan");
+    };
+    $("#e-del").onclick = () => {
+      if (!confirm("Hapus pemeran ini dari semua adegan?")) return;
+      state.characters = state.characters.filter(x => x.id !== c.id);
+      state.scenes.forEach(s => s.characterIds = (s.characterIds || []).filter(id => id !== c.id));
+      save(); closeSheet(); renderCast(); renderScenes(); renderCaptions();
+    };
+    $("#e-photo").onclick = () => pickPhoto(c.id);
+  }
+
+  function pickPhoto(cid) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = async () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      try {
+        const data = await compressImage(file);
+        const c = charById(cid);
+        if (!c) return;
+        c.photo = data;
+        save(); renderCast();
+        toast("Foto disimpan di HP ini");
+      } catch (e) {
+        console.warn(e);
+        toast("Gagal memproses foto");
+      }
+    };
+    input.click();
+  }
+
+  function compressImage(file, maxSide=720, maxBytes=180*1024) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        let w = img.width, h = img.height;
+        const scale = maxSide / Math.max(w, h);
+        if (scale < 1) { w = Math.round(w*scale); h = Math.round(h*scale); }
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        let q = 0.84;
+        const tryQ = () => {
+          canvas.toBlob(blob => {
+            if (!blob) return reject(new Error("blob"));
+            if (blob.size > maxBytes && q > 0.5) { q -= 0.1; tryQ(); return; }
+            const r = new FileReader();
+            r.onload = () => resolve(r.result);
+            r.onerror = reject;
+            r.readAsDataURL(blob);
+          }, "image/jpeg", q);
+        };
+        tryQ();
+      };
+      img.onerror = reject;
+      img.src = url;
+    });
+  }
+
+  function preserveFocus() {
+    const a = document.activeElement;
+    if (!a || !a.id) return null;
+    return { id: a.id, start: a.selectionStart, end: a.selectionEnd };
+  }
+  function restoreFocus(f) {
+    if (!f) return;
+    const el = document.getElementById(f.id);
+    if (!el) return;
+    el.focus();
+    try { if (typeof f.start === "number") el.setSelectionRange(f.start, f.end); } catch (_) {}
+  }
+
+  function renderAll() {
+    renderProject();
+    renderRatio();
+    renderScenes();
+    renderCaptions();
+    renderCast();
+  }
+
+  function setSceneCount(n) {
+    n = Math.max(1, Math.min(20, Number(n) || 1));
+    while (state.scenes.length < n) state.scenes.push(blankScene(state.scenes.length + 1));
+    while (state.scenes.length > n) state.scenes.pop();
+  }
+
+  function toast(msg) {
+    const t = $("#toast");
+    t.textContent = msg;
+    t.classList.add("on");
+    clearTimeout(toast._id);
+    toast._id = setTimeout(() => t.classList.remove("on"), 1600);
+  }
+
+  async function copyText(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = text; ta.setAttribute("readonly","");
+        ta.style.position = "fixed"; ta.style.left = "-9999px";
+        document.body.appendChild(ta); ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      toast("Tersalin");
+      return true;
+    } catch (e) {
+      console.warn(e);
+      toast("Gagal menyalin");
+      return false;
+    }
+  }
+
+  function sceneBundle(s, i) {
+    return [
+      structuredBlock(s, i),
+      "",
+      "PROMPT GAMBAR:",
+      imagePrompt(s),
+      "",
+      "PROMPT VIDEO:",
+      videoPrompt(s),
+      "",
+      "PROMPT NEGATIF:",
+      negativePrompt(),
+    ].join("\n");
+  }
+
+  function copyPayload(kind, sid) {
+    if (kind === "all") return allText();
+    if (kind === "cap-hook") return buildCaption(capTab).hook;
+    if (kind === "cap-desc") return buildCaption(capTab).desc;
+    if (kind === "cap-tags") return buildCaption(capTab).tags;
+    if (kind === "cap-all") {
+      const c = buildCaption(capTab);
+      return `${c.hook}\n\n${c.desc}\n\n${c.tags}`;
+    }
+    const s = state.scenes.find(x => x.id === sid);
+    if (!s) return "";
+    const i = state.scenes.indexOf(s) + 1;
+    if (kind === "struct") return structuredBlock(s, i);
+    if (kind === "image") return imagePrompt(s);
+    if (kind === "video") return videoPrompt(s);
+    if (kind === "neg") return negativePrompt();
+    if (kind === "scene-all") return sceneBundle(s, i);
+    return "";
+  }
+
+  function exportTxt() {
+    const blob = new Blob([allText()], { type: "text/plain;charset=utf-8" });
+    const a = document.createElement("a");
+    const safe = (state.title || "prompt").replace(/[^\w\-]+/g, "_").slice(0, 40);
+    a.href = URL.createObjectURL(blob);
+    a.download = safe + "_prompt.txt";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast("File diunduh");
+  }
+
+  /* ---------- events ---------- */
+  function bind() {
+    $("#f-title").addEventListener("input", e => { state.title = e.target.value; save(); renderCaptions(); });
+    $("#f-era").addEventListener("change", e => { state.era = e.target.value; save(); renderProject(); refreshAllPrompts(); });
+    $("#f-era-custom").addEventListener("input", e => { state.eraCustom = e.target.value; save(); refreshAllPrompts(); });
+    $("#f-count").addEventListener("change", e => { setSceneCount(e.target.value); save(); renderAll(); });
+    $("#f-duration").addEventListener("input", e => { state.duration = Number(e.target.value) || 5; save(); refreshAllPrompts(); });
+
+    $("#f-style").addEventListener("click", e => {
+      const b = e.target.closest("[data-style]"); if (!b) return;
+      state.style = b.dataset.style; save(); renderProject(); refreshAllPrompts();
+    });
+    $("#f-ratio").addEventListener("click", e => {
+      const b = e.target.closest("[data-ratio]"); if (!b) return;
+      state.ratio = b.dataset.ratio; save(); renderRatio(); refreshAllPrompts();
+    });
+
+    $("#btn-add-scene").addEventListener("click", () => {
+      state.scenes.push(blankScene(state.scenes.length + 1));
+      save(); renderProject(); renderScenes();
+      const last = state.scenes[state.scenes.length-1];
+      const el = $("#scene-" + last.id);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    $("#btn-add-cast").addEventListener("click", () => editCast(null));
+    $("#btn-copy-all").addEventListener("click", () => copyText(allText()));
+    $("#btn-export").addEventListener("click", exportTxt);
+    $("#btn-export-2").addEventListener("click", exportTxt);
+
+    $("#btn-load-example").addEventListener("click", () => {
+      if (confirm("Ganti proyek sekarang dengan contoh POV Prajurit Majapahit? Yang sekarang tertimpa.")) {
+        state = exampleProject(); capTab = "tiktok"; save(); renderAll(); toast("Contoh dimuat");
+        $("#proyek").scrollIntoView();
+      }
+    });
+    $("#btn-reset").addEventListener("click", () => {
+      if (confirm("Buat proyek kosong? Data sekarang hilang dari HP ini.")) {
+        state = blankProject(); save(); renderAll(); toast("Proyek baru");
+      }
+    });
+
+    $("#scene-list").addEventListener("input", onSceneField);
+    $("#scene-list").addEventListener("change", onSceneField);
+    $("#scene-list").addEventListener("click", onSceneClick);
+    $("#cast-grid").addEventListener("click", onCastClick);
+    $("#cap-tabs").addEventListener("click", e => {
+      const b = e.target.closest("[data-captab]"); if (!b) return;
+      capTab = b.dataset.captab; renderCaptions();
+    });
+    $("#cap-body").addEventListener("click", e => {
+      const b = e.target.closest("[data-copy]"); if (!b) return;
+      copyText(copyPayload(b.dataset.copy));
+    });
+    $("#sheet-bg").addEventListener("click", e => { if (e.target.id === "sheet-bg") closeSheet(); });
+
+    document.addEventListener("click", e => {
+      const b = e.target.closest("#scene-list [data-copy]");
+      if (!b) return;
+      copyText(copyPayload(b.dataset.copy, b.dataset.sid));
+    });
+  }
+
+  function onSceneField(e) {
+    const el = e.target.closest("[data-sf]");
+    if (!el) return;
+    const s = state.scenes.find(x => x.id === el.dataset.sid);
+    if (!s) return;
+    s[el.dataset.sf] = el.value;
+    save();
+    refreshScenePrompts(s.id);
+    if (el.dataset.sf === "title") renderCaptions();
+  }
+
+  function onSceneClick(e) {
+    const tog = e.target.closest("[data-act=toggle-char]");
+    if (tog) {
+      const s = state.scenes.find(x => x.id === tog.dataset.sid);
+      if (!s) return;
+      s.characterIds = s.characterIds || [];
+      const i = s.characterIds.indexOf(tog.dataset.cid);
+      if (i >= 0) s.characterIds.splice(i, 1); else s.characterIds.push(tog.dataset.cid);
+      tog.classList.toggle("on");
+      save(); refreshScenePrompts(s.id);
+      return;
+    }
+    const up = e.target.closest("[data-act=up]");
+    const down = e.target.closest("[data-act=down]");
+    const del = e.target.closest("[data-act=del-scene]");
+    if (up || down) {
+      const sid = (up||down).dataset.sid;
+      const i = state.scenes.findIndex(x => x.id === sid);
+      const j = up ? i-1 : i+1;
+      if (j < 0 || j >= state.scenes.length) return;
+      const tmp = state.scenes[i]; state.scenes[i] = state.scenes[j]; state.scenes[j] = tmp;
+      save(); renderScenes();
+      return;
+    }
+    if (del) {
+      if (state.scenes.length <= 1) { toast("Minimal satu adegan"); return; }
+      if (!confirm("Hapus adegan ini?")) return;
+      state.scenes = state.scenes.filter(x => x.id !== del.dataset.sid);
+      save(); renderProject(); renderScenes(); renderCaptions();
+    }
+  }
+
+  function onCastClick(e) {
+    const edit = e.target.closest("[data-act=edit-cast]");
+    const photo = e.target.closest("[data-act=photo-cast]");
+    if (edit) editCast(edit.dataset.cid);
+    if (photo) pickPhoto(photo.dataset.cid);
+  }
+
+  /* ---------- boot ---------- */
+  load();
+  renderAll();
+  bind();
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(err => console.warn("sw", err));
+  }
+})();
+
+</script>
+</body>
+</html>
